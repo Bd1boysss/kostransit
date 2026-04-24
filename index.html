@@ -286,6 +286,7 @@ input,select,textarea{font-size:16px!important;}
     <span class="badge-karya" id="karya-badge">Karyawan</span>
     <button class="nav-tab active" onclick="kNavTab('pos',this)">Kasir</button>
     <button class="nav-tab" onclick="kNavTab('pengeluaran-k',this)">Pengeluaran</button>
+    <button class="nav-tab" onclick="kNavTab('pemasukan-k',this)">Pemasukan</button>
     <button class="btn-logout" onclick="logout()">Keluar</button>
   </div>
   <div class="main">
@@ -332,6 +333,20 @@ input,select,textarea{font-size:16px!important;}
         </div>
         <div id="pk-toast" class="toast ok" style="margin-bottom:8px">Pengeluaran tercatat!</div>
         <div id="pk-body"></div>
+      </div>
+    </div>
+
+    <div id="k-pemasukan-k" class="k-section">
+      <div class="section-card">
+        <div class="section-title">Catat pemasukan</div>
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Contoh: setoran, titipan, atau pemasukan lainnya</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+          <input type="text" id="pm-ket" placeholder="Keterangan (contoh: setoran kasir, titipan...)" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none">
+          <input type="number" id="pm-nominal" placeholder="Nominal (Rp)" min="0" step="1000" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px;outline:none">
+          <button onclick="tambahPemasukanK()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#27500A;color:#fff;font-size:13px;font-weight:600;cursor:pointer">+ Catat Pemasukan</button>
+        </div>
+        <div id="pm-toast" class="toast ok" style="margin-bottom:8px">Pemasukan tercatat!</div>
+        <div id="pm-body"></div>
       </div>
     </div>
   </div>
@@ -495,6 +510,20 @@ input,select,textarea{font-size:16px!important;}
           <div class="field">
             <label>Tambahan per sesi (Rp)</label>
             <input type="number" id="set-tambah-weekend" step="5000" min="0" placeholder="10000" onchange="saveTarif()">
+          </div>
+        </div>
+        <div style="border-top:1px solid #eee;padding-top:14px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px">⏱ Harga Tambah Jam (1 jam saja)</div>
+          <div style="font-size:12px;color:#888;margin-bottom:10px">Harga khusus untuk tambah 1 jam. Lebih dari 1 jam otomatis ikut tarif normal.</div>
+          <div class="set-grid">
+            <div class="field">
+              <label>1 jam AC (Rp)</label>
+              <input type="number" id="set-tambah-jam-ac" step="5000" min="0" placeholder="50000" onchange="saveTarif()">
+            </div>
+            <div class="field">
+              <label>1 jam Non-AC (Rp)</label>
+              <input type="number" id="set-tambah-jam-nonac" step="5000" min="0" placeholder="30000" onchange="saveTarif()">
+            </div>
           </div>
         </div>
         <div id="tarif-ok" class="toast ok" style="margin-bottom:8px">Tersimpan!</div>
@@ -974,6 +1003,7 @@ function kNavTab(t,el){
   document.querySelectorAll('.k-section').forEach(s=>s.classList.remove('active'));
   document.getElementById('k-'+t).classList.add('active');
   if(t==='pengeluaran-k')renderPengeluaranK();
+  if(t==='pemasukan-k')renderPemasukanK();
 }
 
 function tambahPengeluaranK(){
@@ -987,6 +1017,35 @@ function tambahPengeluaranK(){
   document.getElementById('pk-nominal').value='';
   const t=document.getElementById('pk-toast');t.style.display='';setTimeout(()=>t.style.display='none',2000);
   renderPengeluaranK();
+}
+
+function tambahPemasukanK(){
+  const ket=document.getElementById('pm-ket').value.trim();
+  const nominal=parseFloat(document.getElementById('pm-nominal').value)||0;
+  if(!ket||!nominal){showToast('Isi keterangan dan nominal!');return;}
+  const tgl=(()=>{const d=new Date();const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());})();
+  keuangan.unshift({id:Date.now(),jenis:'masuk',ket,nominal,tgl,karya:curKarya});
+  saveKeuangan();
+  document.getElementById('pm-ket').value='';
+  document.getElementById('pm-nominal').value='';
+  const t=document.getElementById('pm-toast');t.style.display='';setTimeout(()=>t.style.display='none',2000);
+  renderPemasukanK();
+}
+
+function renderPemasukanK(){
+  const mine=keuangan.filter(k=>k.jenis==='masuk'&&k.karya===curKarya);
+  const el=document.getElementById('pm-body');
+  if(!el)return;
+  if(!mine.length){el.innerHTML='<div style="text-align:center;padding:1.5rem;color:#aaa;font-size:13px">Belum ada pemasukan</div>';return;}
+  el.innerHTML=mine.map(k=>
+    '<div style="border:1px solid #eee;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
+    '<div style="flex:1;min-width:0">'+
+      '<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+k.ket+'</div>'+
+      '<div style="font-size:11px;color:#888;margin-top:2px">'+new Date(k.tgl+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+'</div>'+
+    '</div>'+
+    '<span style="font-weight:700;color:#27500A;flex-shrink:0">Rp '+k.nominal.toLocaleString('id-ID')+'</span>'+
+    '</div>'
+  ).join('');
 }
 
 function renderPengeluaranK(){
@@ -1054,7 +1113,11 @@ function oNavTab(t,el){
     if(tarif.customNonAC){Object.entries(tarif.customNonAC).forEach(([j,h])=>{if(h)TARIF_NONAC[j]=h;});}
     if(tarif.customLok4){Object.entries(tarif.customLok4).forEach(([j,h])=>{if(h)TARIF_AC_LOK4[j]=h;});}
     const tw=document.getElementById('set-tambah-weekend');
+    const tj_ac=document.getElementById('set-tambah-jam-ac');
+    const tj_nonac=document.getElementById('set-tambah-jam-nonac');
     if(tw)tw.value=tarif.tambahWeekend||10000;
+    if(tj_ac)tj_ac.value=tarif.tambahJamAC||50000;
+    if(tj_nonac)tj_nonac.value=tarif.tambahJamNonAC||30000;
     const p123=document.getElementById('set-pass-123');
     const p4=document.getElementById('set-pass-4');
     const ppt=document.getElementById('set-pass-parttime');
@@ -1441,6 +1504,17 @@ function showCheckout(occ){
   }
 }
 
+function getTambahJamOptions(tipe, loc){
+  // 1 jam: selalu ada dengan harga custom
+  // 2 jam ke atas: ikut tarif normal
+  const custom1jam=tipe==='ac'?(tarif.tambahJamAC||50000):(tarif.tambahJamNonAC||30000);
+  const normalOpts=getDurasiOptions(tipe, loc||1).filter(o=>o.j>1);
+  return [
+    {j:1, label:'1 jam', harga:custom1jam},
+    ...normalOpts
+  ];
+}
+
 function showPerpanjang(id){
   const occ=active.find(a=>String(a.id)===String(id));
   if(!occ)return;
@@ -1456,7 +1530,7 @@ function showPerpanjang(id){
     '<div class="p-field"><label>Tambah berapa jam?</label>'+
     '<select id="perp-tambah" onchange="updatePerpEst(\''+occ.id+'\')" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
     '<option value="">— pilih tambahan —</option>'+
-    getDurasiOptions(occ.tipe||'ac',occ.loc).map(o=>'<option value="'+o.j+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
+    getTambahJamOptions(occ.tipe||'ac', occ.loc).map(o=>'<option value="'+o.j+'" data-harga="'+o.harga+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
     '</select></div>'+
     '<div class="p-field"><label>Metode bayar tambahan</label>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">'+
@@ -1494,13 +1568,17 @@ function checkPerpReady(){
 
 function updatePerpEst(id){
   const occ=active.find(a=>String(a.id)===String(id));if(!occ)return;
-  const tambah=parseFloat(document.getElementById('perp-tambah')?.value)||0;
+  const sel=document.getElementById('perp-tambah');
+  const tambah=parseFloat(sel?.value)||0;
   const box=document.getElementById('perp-est-box');
   if(!tambah||!box){if(box)box.style.display='none';checkPerpReady();return;}
+  // Ambil harga dari data-harga option yang dipilih
+  const selectedOpt=sel?.options[sel.selectedIndex];
+  const harga=parseFloat(selectedOpt?.dataset.harga)||0;
   const baseKeluar=occ.keluar?strToDate(occ.keluar):new Date();
   const newKeluar=new Date(baseKeluar.getTime()+tambah*3600000);
   box.style.display='';
-  document.getElementById('perp-est-val').textContent='Rp '+Math.round(occ.tarif*tambah).toLocaleString('id-ID');
+  document.getElementById('perp-est-val').textContent='Rp '+Math.round(harga).toLocaleString('id-ID');
   document.getElementById('perp-est-dur').textContent='Keluar baru: '+newKeluar.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
   checkPerpReady();
 }
@@ -1512,8 +1590,14 @@ function doPerpanjang(id){
   const baseKeluar=active[idx].keluar?strToDate(active[idx].keluar):new Date();
   const newKeluar=new Date(baseKeluar.getTime()+tambah*3600000);
   const tipeKamar=active[idx].tipe||'ac';
-  const biayaTambah=getHargaFixed(tipeKamar,tambah,active[idx].loc)||Math.round((active[idx].tarif||0)*tambah);
-  active[idx].keluar=newKeluar.toISOString().slice(0,16);
+  // Ambil harga dari dropdown (sudah include custom 1jam atau tarif normal)
+  const sel=document.getElementById('perp-tambah');
+  const selectedOpt=sel?.options[sel.selectedIndex];
+  const biayaTambah=parseFloat(selectedOpt?.dataset.harga)||getHargaFixed(tipeKamar,tambah,active[idx].loc)||0;
+  // Simpan keluar baru sebagai local time string (bukan UTC)
+  const pad=n=>String(n).padStart(2,'0');
+  const keluarStr=newKeluar.getFullYear()+'-'+pad(newKeluar.getMonth()+1)+'-'+pad(newKeluar.getDate())+'T'+pad(newKeluar.getHours())+':'+pad(newKeluar.getMinutes());
+  active[idx].keluar=keluarStr;
   active[idx].durasisewa=(active[idx].durasisewa||0)+tambah;
   active[idx].total=(active[idx].total||0)+biayaTambah;
   perpPay='';
@@ -1827,6 +1911,10 @@ function getDurasiOptions(tipe, loc){
 
 function saveTarif(){
   tarif.tambahWeekend=parseFloat(document.getElementById('set-tambah-weekend')?.value)||10000;
+  const ac=document.getElementById('set-tambah-jam-ac')?.value;
+  const nonac=document.getElementById('set-tambah-jam-nonac')?.value;
+  tarif.tambahJamAC=ac?parseFloat(ac):0;
+  tarif.tambahJamNonAC=nonac?parseFloat(nonac):0;
   save();
   const t=document.getElementById('tarif-ok');if(t){t.style.display='';setTimeout(()=>t.style.display='none',2500);}
 }
