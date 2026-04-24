@@ -378,7 +378,10 @@ input,select,textarea{font-size:16px!important;}
       <div class="section-card" style="margin-bottom:12px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:14px;font-weight:700;color:#1a1a1a">Tutup Buku</div>
-          <button onclick="clearAllData()" style="padding:5px 12px;border-radius:8px;border:1px solid #f5b7b1;background:transparent;font-size:12px;cursor:pointer;color:#c0392b;font-weight:600">🗑 Bersihkan</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="downloadLaporan()" style="padding:5px 12px;border-radius:8px;border:1px solid #185FA5;background:transparent;font-size:12px;cursor:pointer;color:#185FA5;font-weight:600">⬇ Download</button>
+            <button onclick="clearAllData()" style="padding:5px 12px;border-radius:8px;border:1px solid #f5b7b1;background:transparent;font-size:12px;cursor:pointer;color:#c0392b;font-weight:600">🗑 Bersihkan</button>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <select id="fil-lok" onchange="setLapLok(this.value)" style="width:100%;padding:9px 10px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;outline:none">
@@ -2405,6 +2408,112 @@ function renderLaporan(){
       '</div>'
     ).join('');}
   }
+}
+
+function downloadLaporan(){
+  // Ambil data yang sedang ditampilkan berdasarkan filter aktif
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const todayStr=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  const s1s=tarif.shift1Start||'08:00';
+  const s1e=tarif.shift1End||'20:00';
+  const pts=tarif.ptStart||'12:00';
+  const pte=tarif.ptEnd||'00:00';
+  const isPartTime=h=>(h.karya||'').includes('(Part Time)');
+  const getShiftDl=h=>{const d=strToDate(h.masuk||h.keluarAktual);if(isPartTime(h))return isInShift(d,pts,pte)?'PT':'S2';return isInShift(d,s1s,s1e)?'S1':'S2';};
+  const getMasukDl=h=>strToDate(h.masuk||h.keluarAktual);
+
+  let filtered=history.filter(h=>h.keluarAktual);
+
+  // Apply filter lokasi
+  if(lapLok==='123') filtered=filtered.filter(h=>['1','2','3'].includes(String(h.loc)));
+  else if(lapLok==='4') filtered=filtered.filter(h=>String(h.loc)==='4');
+
+  // Apply filter shift/mode
+  if(lapShiftMode==='all-today'){
+    const d0=strToDate(todayStr+'T00:00:00'),d1=strToDate(todayStr+'T23:59:59');
+    filtered=filtered.filter(h=>{const d=getMasukDl(h);return d>=d0&&d<=d1;});
+  } else if(lapShiftMode==='shift1-today'){
+    filtered=filtered.filter(h=>{
+      const d=getMasukDl(h);
+      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()&&getShiftDl(h)==='S1';
+    });
+  } else if(lapShiftMode==='shift2-today'){
+    const kemarin=new Date(now);kemarin.setDate(now.getDate()-1);
+    filtered=filtered.filter(h=>{
+      const d=getMasukDl(h);
+      const isHariIni=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+      const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
+      return (isHariIni||isKemarin)&&getShiftDl(h)==='S2';
+    });
+  } else if(lapShiftMode==='pt-today'){
+    const kemarin=new Date(now);kemarin.setDate(now.getDate()-1);
+    filtered=filtered.filter(h=>{
+      if(!isPartTime(h))return false;
+      const d=getMasukDl(h);
+      const isHariIni=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+      const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
+      return isHariIni||isKemarin;
+    });
+  } else if(lapShiftMode==='all-month'){
+    const bulan=todayStr.slice(0,7);
+    filtered=filtered.filter(h=>{const d=getMasukDl(h);return d.getFullYear()+'-'+pad(d.getMonth()+1)===bulan;});
+  } else if(lapShiftMode==='custom'){
+    const dari=document.getElementById('lap-dari')?.value;
+    const sampai=document.getElementById('lap-sampai')?.value;
+    if(dari&&sampai){
+      const dariD=strToDate(dari+'T00:00:00'),sampaiD=strToDate(sampai+'T23:59:59');
+      filtered=filtered.filter(h=>{const d=getMasukDl(h);return d>=dariD&&d<=sampaiD;});
+    }
+  }
+
+  if(!filtered.length){showToast('Tidak ada data untuk didownload!');return;}
+
+  // Buat CSV
+  const rows=[['No','Tanggal','Kamar','Lokasi','Tipe','Nama Tamu','Karyawan','Jam Masuk','Jam Keluar','Durasi (jam)','Total (Rp)','Metode Bayar','Shift']];
+  filtered.forEach((h,i)=>{
+    const masukD=strToDate(h.masuk||h.keluarAktual);
+    const keluarD=h.keluarAktual?strToDate(h.keluarAktual):null;
+    rows.push([
+      i+1,
+      masukD.toLocaleDateString('id-ID'),
+      getNama(h.loc,h.kamar),
+      LOKASI[h.loc]?.nama||'Lok.'+h.loc,
+      (h.tipe||'').toUpperCase(),
+      h.nama||'Tamu',
+      h.karya||'-',
+      masukD.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
+      keluarD?keluarD.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-',
+      h.durasisewa||h.durasi||0,
+      h.total||0,
+      h.metodeBayar||'-',
+      getShiftDl(h)
+    ]);
+  });
+
+  // Tambah summary
+  const total=filtered.reduce((s,h)=>s+(h.total||0),0);
+  const cash=filtered.filter(h=>h.metodeBayar==='cash').reduce((s,h)=>s+(h.total||0),0);
+  const transfer=filtered.filter(h=>h.metodeBayar==='transfer').reduce((s,h)=>s+(h.total||0),0);
+  rows.push([]);
+  rows.push(['SUMMARY','','','','','','','','','','','','']);
+  rows.push(['Total Transaksi',filtered.length]);
+  rows.push(['Total Pendapatan','',total]);
+  rows.push(['Cash','',cash]);
+  rows.push(['Transfer','',transfer]);
+
+  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const tgl=todayStr.replace(/-/g,'');
+  a.download='laporan-kostransit-'+tgl+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Laporan berhasil didownload!',false);
 }
 
 function printLaporan(){window.print();}
