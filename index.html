@@ -12,28 +12,22 @@
 <meta name="description" content="Sistem Kasir Kos Transit">
 <title>Kos Transit — Sistem Kasir</title>
 
+E html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kos Transit">
+<meta name="application-name" content="Kos Transit">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="description" content="Sistem Kasir Kos Transit">
+<title>Kos Transit — Sistem Kasir</title>
+
 <!-- PWA Manifest inline -->
-<script>
-const manifestData={
-  name:"Kos Transit",
-  short_name:"Kos Transit",
-  description:"Sistem Kasir Kos Transit",
-  start_url:"./",
-  display:"standalone",
-  background_color:"#f5f5f5",
-  theme_color:"#1a1a1a",
-  orientation:"portrait-primary",
-  icons:[
-    {src:"data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="32" fill="#1a1a1a"/><text x="96" y="130" font-size="100" text-anchor="middle" fill="#EAF3DE" font-family="sans-serif" font-weight="bold">K</text></svg>'),sizes:"192x192",type:"image/svg+xml"},
-    {src:"data:image/svg+xml;base64,"+btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#1a1a1a"/><text x="256" y="360" font-size="280" text-anchor="middle" fill="#EAF3DE" font-family="sans-serif" font-weight="bold">K</text></svg>'),sizes:"512x512",type:"image/svg+xml"}
-  ]
-};
-const blob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
-const manifestURL=URL.createObjectURL(blob);
-const link=document.createElement('link');
-link.rel='manifest';link.href=manifestURL;
-document.head.appendChild(link);
-</script>
+
 
 <!-- Apple Touch Icon inline SVG -->
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgcng9IjMyIiBmaWxsPSIjMWExYTFhIi8+PHRleHQgeD0iOTYiIHk9IjEzMCIgZm9udC1zaXplPSIxMDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNFQUYzREUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCI+SzwvdGV4dD48L3N2Zz4=">
@@ -72,7 +66,7 @@ input,select,button{font-family:inherit;font-size:16px}
 .navbar{display:flex;align-items:center;gap:4px;padding:8px 12px;border-bottom:1px solid #1E293B;background:#0F172A;flex-wrap:nowrap;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth;min-height:48px}
 .navbar::-webkit-scrollbar{display:none}.navbar-scroll::-webkit-scrollbar{display:none}
 .navbar-brand{font-size:13px;font-weight:800;color:#fff;margin-right:6px;letter-spacing:-0.3px;flex-shrink:0;white-space:nowrap;line-height:1}
-.nav-tab{padding:6px 12px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#94A3B8;font-weight:500;transition:all 0.2s;flex-shrink:0;white-space:nowrap}
+.nav-tab{padding:6px 10px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:12px;color:#94A3B8;font-weight:600;transition:all 0.2s;flex-shrink:0;white-space:nowrap}
 .nav-tab:hover{background:rgba(255,255,255,0.08);color:#fff}
 .nav-tab.active{background:#2563EB;color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,0.4)}
 .badge-owner{background:rgba(249,115,22,0.15);color:#FB923C;font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700;border:1px solid rgba(249,115,22,0.2);flex-shrink:0;white-space:nowrap}
@@ -272,19 +266,19 @@ input,select,textarea{font-size:16px!important;}
 
 <!-- KARYAWAN -->
 <div id="screen-karya" class="screen">
-  <div style="background:#0F172A;border-bottom:1px solid #1E293B;position:sticky;top:0;z-index:100;display:flex;align-items:center;min-height:48px">
-    <div style="display:flex;align-items:center;gap:6px;padding:0 12px;flex-shrink:0;border-right:1px solid #1E293B">
-      <span style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap">🏠 Kos</span>
-      <span class="badge-karya" id="karya-badge">Karyawan</span>
+  <div style="background:#0F172A;border-bottom:1px solid #1E293B;position:sticky;top:0;z-index:100">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px;font-weight:800;color:#fff">🏠 Kos Transit</span>
+        <span class="badge-karya" id="karya-badge">Karyawan</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
-    <div style="display:flex;align-items:center;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;padding:0 8px" class="navbar-scroll">
+    <div style="display:flex;padding:0 10px 8px;gap:4px;flex-wrap:wrap">
       <button class="nav-tab active" onclick="kNavTab('pos',this)">Kasir</button>
       <button class="nav-tab" onclick="kNavTab('pengeluaran-k',this)">Pengeluaran</button>
       <button class="nav-tab" onclick="kNavTab('pemasukan-k',this)">Pemasukan</button>
       <button class="nav-tab" onclick="kNavTab('history-k',this)">History</button>
-    </div>
-    <div style="padding:0 8px;flex-shrink:0">
-      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
   </div>
   <div class="main">
@@ -362,18 +356,18 @@ input,select,textarea{font-size:16px!important;}
 
 <!-- OWNER -->
 <div id="screen-owner" class="screen">
-  <div style="background:#0F172A;border-bottom:1px solid #1E293B;position:sticky;top:0;z-index:100;display:flex;align-items:center;min-height:48px">
-    <div style="display:flex;align-items:center;gap:6px;padding:0 12px;flex-shrink:0;border-right:1px solid #1E293B">
-      <span style="font-size:13px;font-weight:800;color:#fff;white-space:nowrap">🏠 Kos</span>
-      <span class="badge-owner">Owner</span>
+  <div style="background:#0F172A;border-bottom:1px solid #1E293B;position:sticky;top:0;z-index:100">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px;font-weight:800;color:#fff">🏠 Kos Transit</span>
+        <span class="badge-owner">Owner</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
-    <div style="display:flex;align-items:center;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;padding:0 8px" class="navbar-scroll">
+    <div style="display:flex;padding:0 10px 8px;gap:4px;flex-wrap:wrap">
       <button class="nav-tab active" onclick="oNavTab('laporan',this)">Laporan</button>
       <button class="nav-tab" onclick="oNavTab('status',this)">Status Kamar</button>
       <button class="nav-tab" onclick="oNavTab('pengaturan',this)">Pengaturan</button>
-    </div>
-    <div style="padding:0 8px;flex-shrink:0">
-      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
   </div>
   <div class="main">
@@ -2715,78 +2709,3 @@ setInterval(()=>{
   }
 },1000);
 </script>
-<!-- PWA Install Banner -->
-<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;color:#fff;padding:14px 16px;z-index:9999;display:none;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.3)">
-  <div style="font-size:28px">&#127968;</div>
-  <div style="flex:1">
-    <div style="font-size:14px;font-weight:600">Install Kos Transit</div>
-    <div style="font-size:12px;opacity:0.7;margin-top:2px">Tambahkan ke homescreen untuk akses lebih cepat</div>
-  </div>
-  <button id="pwa-install-btn" style="padding:9px 18px;border-radius:8px;border:none;background:#EAF3DE;color:#27500A;font-size:13px;font-weight:700;cursor:pointer">Install</button>
-  <button onclick="document.getElementById('pwa-banner').style.display='none'" style="padding:9px;border-radius:8px;border:none;background:rgba(255,255,255,0.15);color:#fff;font-size:13px;cursor:pointer">&#10005;</button>
-</div>
-
-<script>
-// Service Worker untuk offline support
-const SW_CODE=`
-const CACHE='kos-transit-v1';
-const ASSETS=['/'];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('/'))));
-});
-`;
-
-if('serviceWorker' in navigator){
-  const swBlob=new Blob([SW_CODE],{type:'application/javascript'});
-  const swURL=URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swURL).catch(()=>{});
-}
-
-// Install prompt
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  const banner=document.getElementById('pwa-banner');
-  if(banner)banner.style.display='flex';
-});
-
-document.getElementById('pwa-install-btn')?.addEventListener('click',async()=>{
-  if(!deferredPrompt)return;
-  deferredPrompt.prompt();
-  const{outcome}=await deferredPrompt.userChoice;
-  deferredPrompt=null;
-  document.getElementById('pwa-banner').style.display='none';
-});
-
-window.addEventListener('appinstalled',()=>{
-  document.getElementById('pwa-banner').style.display='none';
-  deferredPrompt=null;
-});
-
-// iOS install hint
-const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
-if(isIOS&&!isStandalone){
-  setTimeout(()=>{
-    const banner=document.getElementById('pwa-banner');
-    if(banner){
-      banner.style.display='flex';
-      banner.querySelector('#pwa-install-btn').style.display='none';
-      banner.querySelector('div[style*="flex:1"]').innerHTML=
-        '<div style="font-size:14px;font-weight:600">Install di iPhone/iPad</div>'+
-        '<div style="font-size:12px;opacity:0.7;margin-top:2px">Tap tombol Share &#8679; lalu pilih "Add to Home Screen"</div>';
-    }
-  },3000);
-}
-</script>
-</body>
-</html>
