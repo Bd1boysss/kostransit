@@ -94,7 +94,9 @@ input,select,button{font-family:inherit;font-size:16px}
 .kbtn.kosong:hover{border-color:#4ADE80;background:#DCFCE7}
 .kbtn.terisi{background:#FEF2F2;border-color:#FECACA;color:#B91C1C}
 .kbtn.terisi:hover{border-color:#F87171}
-.kbtn.dipilih{background:#EFF6FF;border-color:#93C5FD;color:#1D4ED8;box-shadow:0 0 0 3px rgba(37,99,235,0.15)}
+.kbtn.bersihkan{background:#EFF6FF;border-color:#93C5FD;color:#1D4ED8}
+.kbtn.bersihkan:hover{border-color:#60A5FA;background:#DBEAFE}
+.kbtn.dipilih{background:#EFF6FF;border-color:#2563EB;color:#1D4ED8;box-shadow:0 0 0 3px rgba(37,99,235,0.15)}
 .knum{font-size:18px;font-weight:800;display:block;letter-spacing:-0.5px}
 .ktipe{font-size:10px;display:block;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;opacity:0.7}
 .ktamu{font-size:10px;display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:78px;font-weight:600}
@@ -294,9 +296,10 @@ input,select,textarea{font-size:16px!important;}
           </div>
           <div class="kamar-area"><div class="kamar-grid" id="kamar-grid"></div></div>
           <div class="leg-row">
-            <div class="leg"><div class="legdot" style="background:#EAF3DE;border:2px solid #97C459"></div>Kosong</div>
-            <div class="leg"><div class="legdot" style="background:#FCEBEB;border:2px solid #F09595"></div>Terisi</div>
-            <div class="leg"><div class="legdot" style="background:#E6F1FB;border:2px solid #378ADD"></div>Dipilih</div>
+            <div class="leg"><div class="legdot" style="background:#F0FDF4;border:2px solid #97C459"></div>Kosong</div>
+            <div class="leg"><div class="legdot" style="background:#FEF2F2;border:2px solid #FECACA"></div>Terisi</div>
+            <div class="leg"><div class="legdot" style="background:#EFF6FF;border:2px solid #93C5FD"></div>Bersihkan</div>
+            <div class="leg"><div class="legdot" style="background:#EFF6FF;border:2px solid #2563EB"></div>Dipilih</div>
           </div>
         </div>
         <div class="pos-right">
@@ -717,6 +720,7 @@ let ownerPin='123456';
 let tarif={ac:50000,nonac:35000};
 let active=[];
 let history=[];
+let cleaning=[]; // [{id, loc, kamar, namaKode, waktu}]
 let namaKamar={};
 let keuangan=[];
 let gajiData={};
@@ -758,6 +762,7 @@ function initFirebaseListeners(){
     if(tarif.customLok4){Object.entries(tarif.customLok4).forEach(([j,h])=>{if(h)TARIF_AC_LOK4[j]=h;});}
     active=Object.values(d.active||{});
     history=Object.values(d.history||{}).sort((a,b)=>b.id-a.id);
+    cleaning=Object.values(d.cleaning||{});
     namaKamar=d.namaKamar||{};
     // Load LOKASI dari Firebase jika ada perubahan
     if(d.lokasiData){
@@ -819,6 +824,9 @@ function save(){
   const liburObj={};
   liburData.forEach(l=>liburObj[l.id]=l);
 
+  const cleaningObj={};
+  cleaning.forEach(c=>cleaningObj[c.id]=c);
+
   db.ref('kostransit').update({
     pin:ownerPin,
     tarif,
@@ -830,7 +838,8 @@ function save(){
     gajiData,
     gajiHistory:gajiHistoryObj,
     karyawanManual,
-    liburData:liburObj
+    liburData:liburObj,
+    cleaning:cleaningObj
   }).then(()=>showSyncStatus('Tersimpan ✓',true))
     .catch(()=>showSyncStatus('Gagal simpan!',false));
 }
@@ -1229,10 +1238,6 @@ function nowStr(){
   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
-function nowISO(){
-  return new Date().toISOString();
-}
-
 function strToDate(str){
   // Handle both ISO and datetime-local format
   if(!str)return new Date();
@@ -1324,11 +1329,12 @@ function renderGrid(){
   const rooms=[...loc.ac.map(n=>({n,tipe:'ac'})),...loc.nonac.map(n=>({n,tipe:'nonac'}))];
   document.getElementById('kamar-grid').innerHTML=rooms.map(r=>{
     const occ=active.find(a=>a.loc==curLoc&&a.kamar==r.n);
+    const isClean=cleaning.find(c=>c.loc==curLoc&&c.kamar==r.n);
     const isSel=selected&&selected.loc==curLoc&&selected.kamar==r.n;
     const now2=new Date();
     const belumMulai=occ&&occ.masuk&&strToDate(occ.masuk)>now2;
     const expired=occ&&occ.keluar&&strToDate(occ.keluar)<now2;
-    const cls=occ?'terisi':isSel?'dipilih':'kosong';
+    let cls=occ?'terisi':isClean?'bersihkan':isSel?'dipilih':'kosong';
     const extraStyle=belumMulai?'border-color:#BA7517;background:#FAEEDA;':expired?'border-color:#c0392b;background:#fff0f0;':occ&&occ.keluar&&(strToDate(occ.keluar)-now2)<1800000&&!expired?'border-color:#e67e22;background:#fff8f0;':'';
     return '<div class="kbtn '+cls+'" onclick="selectKamar('+r.n+',\''+r.tipe+'\')" style="'+extraStyle+'">'+
       '<span class="knum">'+getNama(curLoc,r.n)+'</span>'+
@@ -1337,6 +1343,8 @@ function renderGrid(){
       (occ?
         '<span class="ktamu" style="font-size:10px;margin-top:2px"><span style="opacity:0.7">Tamu: </span>'+occ.nama+'</span>'+
         cdHtml(occ)
+      :isClean?
+        '<span class="ktamu" style="font-size:10px;margin-top:4px;font-weight:700;color:#1D4ED8">🧹 Bersihkan</span>'
       :'<span class="ktamu">Kosong</span>')+
     '</div>';
   }).join('');
@@ -1344,9 +1352,12 @@ function renderGrid(){
 
 function selectKamar(n,tipe){
   const occ=active.find(a=>a.loc==curLoc&&a.kamar==n);
+  const isClean=cleaning.find(c=>c.loc==curLoc&&c.kamar==n);
   selected={loc:curLoc,kamar:n,tipe};
   renderGrid();
-  if(occ)showCheckout(occ);else showCheckin(n,tipe);
+  if(occ) showCheckout(occ);
+  else if(isClean) showCleaning(isClean);
+  else showCheckin(n,tipe);
 }
 
 function showEmpty(){
@@ -1699,6 +1710,31 @@ function batalOrder(id){
   save();cancelAction();
 }
 
+function showCleaning(c){
+  stopJamMasukClock();
+  document.getElementById('panel-title').textContent='🧹 '+c.namaKode+' — Bersihkan';
+  document.getElementById('panel-sub').textContent='Kamar perlu dibersihkan dulu sebelum siap pakai';
+  document.getElementById('panel-foot').style.display='';
+  document.getElementById('panel-body').innerHTML=
+    '<div style="text-align:center;padding:1.5rem 0.5rem">'+
+      '<div style="font-size:48px;margin-bottom:12px">🧹</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#1D4ED8;margin-bottom:6px">Kamar perlu dibersihkan</div>'+
+      '<div style="font-size:12px;color:#94A3B8">Setelah dibersihkan, tap tombol di bawah agar kamar kembali tersedia</div>'+
+    '</div>';
+  document.getElementById('panel-foot').innerHTML=
+    '<button class="btn-ci" onclick="selesaiBersih(\''+c.id+'\')">✅ Sudah dibersihkan — Siap pakai</button>'+
+    '<button class="btn-cancel" onclick="showEmpty()">Tutup</button>';
+}
+
+function selesaiBersih(id){
+  cleaning=cleaning.filter(c=>String(c.id)!==String(id));
+  save();
+  selected=null;
+  renderGrid();
+  showEmpty();
+  showToast('Kamar siap pakai! ✅',false);
+}
+
 function doCheckout(id){
   const sid=String(id);
   let idx=active.findIndex(a=>String(a.id)===sid);
@@ -1707,12 +1743,13 @@ function doCheckout(id){
   }
   if(idx<0)return;
   const occ=active[idx];
-  // Pakai jam keluar yang sudah ditetapkan (occ.keluar), bukan jam sekarang
-  // Ini agar laporan shift akurat berdasarkan kapan tamu seharusnya keluar
   const keluarAktual=occ.keluar||nowStr();
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
+  // Tambah ke cleaning list
+  cleaning.push({id:Date.now(),loc:occ.loc,kamar:occ.kamar,namaKode:occ.namaKode||getNama(occ.loc,occ.kamar),waktu:nowStr()});
   save();selected=null;renderGrid();showEmpty();
+  showToast('🧹 Kamar perlu dibersihkan dulu!',true);
 }
 
 
@@ -2148,20 +2185,28 @@ function renderStatusKamar(){
       '<div class="kamar-status-grid">'+
       rooms.map(r=>{
         const a=active.find(x=>String(x.loc)===String(locKey)&&String(x.kamar)===String(r.n));
+        const isClean=cleaning.find(x=>String(x.loc)===String(locKey)&&String(x.kamar)===String(r.n));
         if(a){
           const keluar=a.keluar?strToDate(a.keluar):null;
           const ms=keluar?keluar-now:0;
           const sisa=ms>0?(Math.floor(ms/3600000)+'j '+Math.floor((ms%3600000)/60000)+'m'):'Expired';
-          return '<div id="os_sisa_'+locKey+'_'+r.n+'" style="background:#FCEBEB;border:2px solid #F09595;border-radius:10px;padding:6px;text-align:center;font-size:11px">'+
+          return '<div id="os_sisa_'+locKey+'_'+r.n+'" style="background:#FEF2F2;border:2px solid #FECACA;border-radius:10px;padding:6px;text-align:center;font-size:11px">'+
             '<div style="font-weight:700;font-size:13px">'+getNama(locKey,r.n)+'</div>'+
-            '<div style="color:#791F1F;font-size:10px">'+a.nama+'</div>'+
+            '<div style="color:#B91C1C;font-size:10px">'+a.nama+'</div>'+
             '<div style="color:#888;font-size:10px">'+sisa+'</div>'+
           '</div>';
         }
-        return '<div style="background:#EAF3DE;border:2px solid #97C459;border-radius:10px;padding:6px;text-align:center;font-size:11px">'+
+        if(isClean){
+          return '<div style="background:#EFF6FF;border:2px solid #93C5FD;border-radius:10px;padding:6px;text-align:center;font-size:11px">'+
+            '<div style="font-weight:700;font-size:13px">'+getNama(locKey,r.n)+'</div>'+
+            '<div style="font-size:14px;margin:2px 0">🧹</div>'+
+            '<div style="color:#1D4ED8;font-size:10px;font-weight:700">Bersihkan</div>'+
+          '</div>';
+        }
+        return '<div style="background:#F0FDF4;border:2px solid #BBF7D0;border-radius:10px;padding:6px;text-align:center;font-size:11px">'+
           '<div style="font-weight:700;font-size:13px">'+getNama(locKey,r.n)+'</div>'+
           '<div style="color:#888;font-size:10px">'+(r.tipe==='ac'?'AC':'Non-AC')+'</div>'+
-          '<div style="color:#3B6D11;font-size:10px">Kosong</div>'+
+          '<div style="color:#15803D;font-size:10px;font-weight:600">Kosong</div>'+
         '</div>';
       }).join('')+
       '</div></div>';
