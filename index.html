@@ -417,6 +417,10 @@ input,select,textarea{font-size:16px!important;}
         </div>
       </div>
       <div id="lap-result">
+        <!-- Info rentang tanggal -->
+        <div id="lap-date-range" style="display:none;margin-bottom:10px;padding:8px 14px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;font-size:12px;color:#1D4ED8;font-weight:600;display:flex;align-items:center;gap:6px">
+          <span>📅</span><span id="lap-date-range-text"></span>
+        </div>
         <!-- Summary cards -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px" id="lap-sum"></div>
 
@@ -2342,6 +2346,25 @@ function renderLaporan(){
   // Tambahkan info lokasi ke judul
   if(lapLok==='123') judulTgl+=' · Lok. 1,2,3';
   else if(lapLok==='4') judulTgl+=' · Lok. 4';
+
+  // Hitung rentang tanggal dari data yang ada
+  const drEl=document.getElementById('lap-date-range');
+  const drText=document.getElementById('lap-date-range-text');
+  if(drEl&&drText){
+    if(filtered.length>0){
+      const dates=filtered.map(h=>strToDate(h.masuk||h.keluarAktual));
+      const minDate=new Date(Math.min(...dates));
+      const maxDate=new Date(Math.max(...dates));
+      const fmtDate=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+      const rangeStr=minDate.toDateString()===maxDate.toDateString()?
+        fmtDate(minDate):
+        fmtDate(minDate)+' – '+fmtDate(maxDate);
+      drText.textContent=rangeStr+' · '+filtered.length+' transaksi';
+      drEl.style.display='flex';
+    } else {
+      drEl.style.display='none';
+    }
+  }
 
   const total=filtered.reduce((s,h)=>s+h.total,0);
   const cash=filtered.filter(h=>h.metodeBayar==='cash').reduce((s,h)=>s+h.total,0);
