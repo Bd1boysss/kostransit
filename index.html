@@ -2010,29 +2010,37 @@ function getSurcharge(tipe){
   return 0;
 }
 
-// Surcharge per kamar khusus: {loc_kamar: tambahan}
-const SURCHARGE_KAMAR={'1_1':10000}; // 2A = +10rb
+// Surcharge per kamar khusus: {loc_kamar: {durasi: tambahan} atau number flat}
+const SURCHARGE_KAMAR={
+  '1_1': {default:10000, 168:100000} // 2A: +10rb semua durasi, +100rb untuk 1 minggu
+};
 
-function getKamarSurcharge(loc, kamar){
+function getKamarSurcharge(loc, kamar, durasi){
   const key=String(loc)+'_'+String(kamar);
-  return SURCHARGE_KAMAR[key]||0;
+  const sc=SURCHARGE_KAMAR[key];
+  if(!sc) return 0;
+  if(typeof sc==='number') return sc;
+  // Object: cek durasi spesifik dulu, fallback ke default
+  if(durasi&&sc[durasi]!==undefined) return sc[durasi];
+  return sc.default||0;
 }
 
 function getHargaFixed(tipe, durasi, loc, kamar){
   let base;
   if(String(loc)==='4') base=TARIF_AC_LOK4[durasi]||0;
   else{const tbl=tipe==='ac'?TARIF_AC:TARIF_NONAC; base=tbl[durasi]||0;}
-  return base+getSurcharge(tipe)+(kamar?getKamarSurcharge(loc,kamar):0);
+  return base+getSurcharge(tipe)+(kamar?getKamarSurcharge(loc,kamar,durasi):0);
 }
 
 function getDurasiOptions(tipe, loc, kamar){
   let tbl;
   if(String(loc)==='4') tbl=TARIF_AC_LOK4;
   else tbl=tipe==='ac'?TARIF_AC:TARIF_NONAC;
-  const surcharge=getSurcharge(tipe)+(kamar?getKamarSurcharge(loc,kamar):0);
+  const surcharge=getSurcharge(tipe);
   return Object.entries(tbl).map(([j,harga])=>{
     const label=j==168?'1 minggu':j+' jam';
-    return {j:parseInt(j), label, harga:harga+surcharge};
+    const kamarSc=kamar?getKamarSurcharge(loc,kamar,parseInt(j)):0;
+    return {j:parseInt(j), label, harga:harga+surcharge+kamarSc};
   });
 }
 
@@ -2334,19 +2342,7 @@ function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
   }
 
   document.getElementById('lap-sum').innerHTML=html;
-  document.getElementById('lap-trx-title').textContent='';
-  document.getElementById('lap-trx-body').innerHTML='';
-  document.getElementById('lap-keu-body').innerHTML='';
-  const lapResult=document.getElementById('lap-result');
-  if(lapResult){
-    lapResult.querySelectorAll('.section-card').forEach(el=>{
-      if(el.querySelector('.section-title')?.textContent?.includes('Diagram')||
-         el.querySelector('.section-title')?.textContent?.includes('transaksi')||
-         el.querySelector('.section-title')?.textContent?.includes('Pemasukan')){
-        el.style.display='none';
-      }
-    });
-  }
+  // Lanjut render diagram, per karyawan, rincian seperti filter biasa
 }
 
 function renderLaporan(){
@@ -2451,7 +2447,8 @@ function renderLaporan(){
     if(lapLok==='123') filtered=filtered.filter(h=>['1','2','3'].includes(String(h.loc)));
     else if(lapLok==='4') filtered=filtered.filter(h=>String(h.loc)==='4');
     renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift);
-    return;
+    // Lanjut render diagram, per karyawan, rincian di bawah
+    judulTgl='Semua Transaksi (Otomatis)';
   }
 
   // Filter berdasarkan Lokasi
@@ -2520,14 +2517,16 @@ function renderLaporan(){
   const saldoBersih=total+totalMasukKeu-totalKeluar;
 
   document.getElementById('lap-trx-title').textContent='Laporan — '+judulTgl;
-  document.getElementById('lap-sum').innerHTML=
-    '<div class="scard"><div class="scard-label">Pendapatan kos</div><div class="scard-val g">Rp '+Math.round(total).toLocaleString('id-ID')+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Cash</div><div class="scard-val g">Rp '+Math.round(cash).toLocaleString('id-ID')+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Transfer</div><div class="scard-val b">Rp '+Math.round(transfer).toLocaleString('id-ID')+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Pengeluaran</div><div class="scard-val r">Rp '+Math.round(totalKeluar).toLocaleString('id-ID')+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Saldo bersih</div><div class="scard-val '+(saldoBersih>=0?'g':'r')+'">Rp '+Math.round(saldoBersih).toLocaleString('id-ID')+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Jumlah tamu</div><div class="scard-val">'+filtered.length+'</div></div>'+
-    '<div class="scard"><div class="scard-label">Rata-rata durasi</div><div class="scard-val">'+rataJam.toFixed(1)+' jam</div></div>';
+  if(lapShiftMode!=='otomatis'){
+    document.getElementById('lap-sum').innerHTML=
+      '<div class="scard"><div class="scard-label">Pendapatan kos</div><div class="scard-val g">Rp '+Math.round(total).toLocaleString('id-ID')+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Cash</div><div class="scard-val g">Rp '+Math.round(cash).toLocaleString('id-ID')+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Transfer</div><div class="scard-val b">Rp '+Math.round(transfer).toLocaleString('id-ID')+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Pengeluaran</div><div class="scard-val r">Rp '+Math.round(totalKeluar).toLocaleString('id-ID')+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Saldo bersih</div><div class="scard-val '+(saldoBersih>=0?'g':'r')+'">Rp '+Math.round(saldoBersih).toLocaleString('id-ID')+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Jumlah tamu</div><div class="scard-val">'+filtered.length+'</div></div>'+
+      '<div class="scard"><div class="scard-label">Rata-rata durasi</div><div class="scard-val">'+rataJam.toFixed(1)+' jam</div></div>';
+  }
 
   // Donut chart
   setTimeout(()=>{
