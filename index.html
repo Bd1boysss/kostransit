@@ -2510,6 +2510,7 @@ function renderLaporan(){
       if(!dari||!sampai)return false;
       return k.tgl>=dari&&k.tgl<=sampai;
     }
+    if(lapShiftMode==='otomatis') return true; // semua keuangan
     return false;
   });
   const totalKeluar=filteredKeu.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+k.nominal,0);
