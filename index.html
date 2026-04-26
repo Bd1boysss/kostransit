@@ -406,6 +406,7 @@ input,select,textarea{font-size:16px!important;}
             <option value="shift2-today" id="opt-shift2">Shift 2 (20:00–08:00)</option>
             <option value="pt-today" id="opt-pt">Part Time (12:00–00:00)</option>
             <option value="all-month">Bulan ini</option>
+            <option value="otomatis">Otomatis</option>
             <option value="custom">Kustom</option>
           </select>
         </div>
@@ -2239,7 +2240,99 @@ function renderTransaksi(filtered, judulTgl){
   }).join('');
 }
 
+function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
+  // Sembunyikan date-range bar (diganti dengan breakdown)
+  const drEl=document.getElementById('lap-date-range');
+  if(drEl) drEl.style.display='none';
+
+  // Helper format tanggal
+  const fmtD=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  const fmtRp=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
+
+  // Kelompokkan per shift
+  const s1=filtered.filter(h=>!isPartTime(h)&&getShift(h)===1);
+  const s2=filtered.filter(h=>!isPartTime(h)&&getShift(h)===2);
+  const pt=filtered.filter(h=>isPartTime(h));
+
+  function rangeStr(arr){
+    if(!arr.length) return '-';
+    const dates=arr.map(h=>strToDate(h.masuk||h.keluarAktual));
+    const mn=new Date(Math.min(...dates)), mx=new Date(Math.max(...dates));
+    return mn.toDateString()===mx.toDateString()?fmtD(mn):fmtD(mn)+' – '+fmtD(mx);
+  }
+
+  function shiftCard(label, color, bgColor, arr, jamInfo){
+    if(!arr.length) return '';
+    const total=arr.reduce((s,h)=>s+(h.total||0),0);
+    const cash=arr.filter(h=>h.metodeBayar==='cash').reduce((s,h)=>s+(h.total||0),0);
+    const transfer=arr.filter(h=>h.metodeBayar==='transfer').reduce((s,h)=>s+(h.total||0),0);
+    return '<div style="border:1.5px solid '+color+';border-radius:14px;padding:14px;margin-bottom:10px;background:'+bgColor+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px">'+
+        '<div>'+
+          '<span style="font-size:13px;font-weight:800;color:'+color+'">'+label+'</span>'+
+          '<span style="font-size:11px;color:#94A3B8;margin-left:8px">'+jamInfo+'</span>'+
+        '</div>'+
+        '<span style="font-size:11px;background:#fff;padding:3px 10px;border-radius:20px;color:#64748B;font-weight:600;border:1px solid #E2E8F0">'+arr.length+' transaksi</span>'+
+      '</div>'+
+      '<div style="font-size:11px;color:#64748B;margin-bottom:8px">📅 '+rangeStr(arr)+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'+
+        '<div style="background:#fff;border-radius:10px;padding:8px;text-align:center">'+
+          '<div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div>'+
+          '<div style="font-size:14px;font-weight:800;color:#16A34A">'+fmtRp(total)+'</div>'+
+        '</div>'+
+        '<div style="background:#fff;border-radius:10px;padding:8px;text-align:center">'+
+          '<div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:2px">Cash</div>'+
+          '<div style="font-size:13px;font-weight:700;color:#0F172A">'+fmtRp(cash)+'</div>'+
+        '</div>'+
+        '<div style="background:#fff;border-radius:10px;padding:8px;text-align:center">'+
+          '<div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:2px">Transfer</div>'+
+          '<div style="font-size:13px;font-weight:700;color:#2563EB">'+fmtRp(transfer)+'</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  const grandTotal=filtered.reduce((s,h)=>s+(h.total||0),0);
+  const allDates=filtered.length?rangeStr(filtered):'-';
+
+  let html='';
+  // Grand total
+  html+='<div style="background:linear-gradient(135deg,#0F172A,#1E3A5F);border-radius:14px;padding:14px;margin-bottom:12px;color:#fff">'+
+    '<div style="font-size:12px;color:#94A3B8;font-weight:600;margin-bottom:4px">📊 TOTAL SEMUA SHIFT</div>'+
+    '<div style="font-size:22px;font-weight:800;margin-bottom:4px">'+fmtRp(grandTotal)+'</div>'+
+    '<div style="font-size:11px;color:#94A3B8">📅 '+allDates+' · '+filtered.length+' transaksi</div>'+
+  '</div>';
+
+  html+=shiftCard('Shift 1','#16A34A','#F0FDF4',s1,s1s+'–'+s1e);
+  html+=shiftCard('Shift 2','#2563EB','#EFF6FF',s2,s1e+'–'+s1s);
+  html+=shiftCard('Part Time','#7C3AED','#F5F3FF',pt,pts+'–'+pte);
+
+  if(!filtered.length){
+    html='<div style="text-align:center;padding:2rem;color:#94A3B8;font-size:13px">Belum ada data transaksi</div>';
+  }
+
+  // Render ke lap-sum, sembunyikan elemen lain
+  document.getElementById('lap-sum').innerHTML=html;
+  document.getElementById('lap-trx-title').textContent='';
+  document.getElementById('lap-trx-body').innerHTML='';
+  document.getElementById('lap-keu-body').innerHTML='';
+  // Sembunyikan diagram dan chart untuk mode otomatis
+  const lapResult=document.getElementById('lap-result');
+  if(lapResult){
+    // Sembunyikan section-card diagram
+    lapResult.querySelectorAll('.section-card').forEach(el=>{
+      if(el.querySelector('.section-title')?.textContent?.includes('Diagram')||
+         el.querySelector('.section-title')?.textContent?.includes('transaksi')||
+         el.querySelector('.section-title')?.textContent?.includes('Pemasukan')){
+        el.style.display='none';
+      }
+    });
+  }
+}
+
 function renderLaporan(){
+  // Restore section-card visibility (mungkin disembunyikan mode otomatis)
+  document.querySelectorAll('#lap-result .section-card').forEach(el=>el.style.display='');
   let filtered=[];
   let judulTgl='';
   const now=new Date();
@@ -2333,6 +2426,13 @@ function renderLaporan(){
       return d>=dariD&&d<=sampaiD;
     });
     judulTgl=dariD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' — '+sampaiD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  } else if(lapShiftMode==='otomatis'){
+    // Ambil semua history, render breakdown per shift khusus
+    filtered=history.filter(h=>h.keluarAktual);
+    if(lapLok==='123') filtered=filtered.filter(h=>['1','2','3'].includes(String(h.loc)));
+    else if(lapLok==='4') filtered=filtered.filter(h=>String(h.loc)==='4');
+    renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift);
+    return;
   }
 
   // Filter berdasarkan Lokasi
