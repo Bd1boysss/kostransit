@@ -633,6 +633,21 @@ input,select,textarea{font-size:16px!important;}
         <button onclick="resetActiveData()" style="padding:10px 20px;border-radius:8px;border:1px solid #f5b7b1;background:transparent;color:#c0392b;font-size:13px;font-weight:600;cursor:pointer">Bersihkan semua tamu aktif</button>
       </div>
 
+      <!-- Hapus data per karyawan -->
+      <div class="section-card" style="max-width:460px;width:100%;margin-top:12px">
+        <div class="section-title">🗑 Hapus data uji coba per karyawan</div>
+        <div style="font-size:13px;color:#888;margin-bottom:12px">Pilih nama karyawan lalu hapus semua transaksi & pengeluaran/pemasukan miliknya dari history.</div>
+        <div class="field">
+          <label>Pilih karyawan</label>
+          <select id="del-karya-sel" style="width:100%;padding:9px 10px;border:1.5px solid #BFDBFE;border-radius:10px;background:#fff;outline:none;font-size:14px" onchange="previewHapusKarya()">
+            <option value="">— pilih karyawan —</option>
+          </select>
+        </div>
+        <div id="del-karya-preview" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px"></div>
+        <button id="del-karya-btn" onclick="hapusDataKarya()" style="display:none;width:100%;padding:11px;border-radius:10px;border:none;background:#DC2626;color:#fff;font-size:13px;font-weight:700;cursor:pointer">🗑 Hapus semua data karyawan ini</button>
+        <div id="del-karya-ok" class="toast ok" style="margin-top:8px">Data berhasil dihapus!</div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1226,6 +1241,7 @@ function oNavTab(t,el){
     if(spts)spts.value=tarif.ptStart||'12:00';
     if(spte)spte.value=tarif.ptEnd||'00:00';
     updateShiftPreview();
+    loadDelKaryaList();
     renderTarifTables();
     renderKelolaKamar();
   }
@@ -1443,13 +1459,21 @@ function showCheckin(n,tipe){
       '<input id="ci-nama" type="text" placeholder="Nama tamu..." style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
     '</div>'+
     '<div class="p-field"><label>Jam masuk <span style="font-size:10px;color:#27ae60;font-weight:600" id="jam-auto-label">(otomatis)</span></label>'+
-    '<input id="ci-masuk" type="datetime-local" value="'+nowStr()+'" onchange="jamMasukLocked=true;stopJamMasukClock();document.getElementById(\'jam-auto-label\').textContent=\'(manual)\';document.getElementById(\'jam-auto-label\').style.color=\'#e67e22\';" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none"></div>'+
-    '<button id="ci-surcharge" onclick="toggleSurcharge(\''+tipe+'\')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#888;margin-bottom:10px">🗓 Weekend / 🔴 Tgl Merah &nbsp;&nbsp;+Rp '+tambahW.toLocaleString('id-ID')+'</button>'+
+    '<input id="ci-masuk" type="datetime-local" value="'+nowStr()+'" onchange="jamMasukLocked=true;stopJamMasukClock();document.getElementById(\'jam-auto-label\').textContent=\'(manual)\';document.getElementById(\'jam-auto-label\').style.color=\'#e67e22\';autoDetectSurcharge();" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none"></div>'+
+    '<div id="ci-surcharge" data-active="0" style="width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px">🗓 <span id="ci-surcharge-label">Cek hari...</span></div>'+
     '<div class="p-field"><label>Durasi sewa</label>'+
-    '<select id="ci-durasi" onchange="updateEst()" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
+    '<select id="ci-durasi" onchange="onDurasiChange()" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
     '<option value="">— pilih durasi —</option>'+
     getDurasiOptions(tipe,curLoc,n).map(o=>'<option value="'+o.j+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
+    '<option value="custom">✏️ Custom (pilih tanggal keluar)</option>'+
     '</select></div>'+
+    '<div id="ci-custom-wrap" style="display:none;margin-bottom:10px">'+
+      '<div class="p-field" style="margin-bottom:6px">'+
+        '<label>Tanggal & jam keluar</label>'+
+        '<input type="datetime-local" id="ci-keluar-custom" onchange="updateEstCustom()" style="width:100%;padding:8px 10px;border:1.5px solid #2563EB;border-radius:8px;background:#EFF6FF;color:#1a1a1a;outline:none">'+
+      '</div>'+
+      '<div id="ci-custom-info" style="font-size:12px;color:#2563EB;font-weight:600;padding:6px 10px;background:#EFF6FF;border-radius:8px;display:none"></div>'+
+    '</div>'+
     '<div class="total-box" id="est-box" style="display:none">'+
       '<div class="total-label">Total bayar</div>'+
       '<div class="total-val" id="est-val">Rp 0</div>'+
@@ -1467,6 +1491,7 @@ function showCheckin(n,tipe){
     '<button class="btn-ci" id="btn-do-ci" onclick="doCheckin('+n+',\''+tipe+'\')" disabled style="opacity:0.4;cursor:not-allowed">Pilih durasi & pembayaran dulu</button>'+
     '<button class="btn-cancel" onclick="cancelAction()">Batal</button>';
   startJamMasukClock();
+  autoDetectSurcharge(); // langsung panggil, DOM sudah siap
 }
 
 let ciPay='';
@@ -1481,11 +1506,180 @@ function selectCiPay(m){
   checkCiReady();
 }
 
+function hitungHargaCustom(tipe, loc, kamar, totalJam, masukDate){
+  // Pecah total jam jadi blok tarif optimal
+  // Deteksi weekend/libur per hari untuk tambah surcharge
+  const tbl = String(loc)==='4' ? TARIF_AC_LOK4 : (tipe==='ac'?TARIF_AC:TARIF_NONAC);
+  const durations = Object.keys(tbl).map(Number).sort((a,b)=>b-a);
+  const tambahW = tarif.tambahWeekend||10000;
+
+  let sisa = totalJam;
+  let totalHarga = 0;
+  let rincian = [];
+  let curTime = masukDate ? new Date(masukDate.getTime()) : null;
+
+  while(sisa > 0.01){
+    let found = false;
+    for(const d of durations){
+      if(d <= sisa + 0.01){
+        const baseHarga = tbl[d]||0;
+        const kamarSc = kamar ? getKamarSurcharge(loc, kamar, d) : 0;
+        // Cek apakah hari ini weekend/libur
+        let weSc = 0;
+        if(curTime){
+          const hari = curTime.getDay();
+          const pad = n=>String(n).padStart(2,'0');
+          const tglStr = curTime.getFullYear()+'-'+pad(curTime.getMonth()+1)+'-'+pad(curTime.getDate());
+          if(hari===0||hari===6||getLiburSet(curTime.getFullYear()).has(tglStr)){
+            weSc = tambahW;
+          }
+        }
+        const hargaBlok = baseHarga + kamarSc + weSc;
+        totalHarga += hargaBlok;
+        const label = d===168?'1 minggu':d>=24?(d/24)+' hari':d+' jam';
+        rincian.push({jam:d, label, base:baseHarga, kamarSc, weSc, total:hargaBlok,
+          tgl:curTime?curTime.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}):null});
+        sisa = Math.round((sisa - d) * 100) / 100;
+        if(curTime) curTime = new Date(curTime.getTime() + d*3600000);
+        found = true;
+        break;
+      }
+    }
+    if(!found){
+      const minD = durations[durations.length-1];
+      const baseHarga = tbl[minD]||0;
+      const kamarSc = kamar ? getKamarSurcharge(loc, kamar, minD) : 0;
+      let weSc = 0;
+      if(curTime){
+        const hari=curTime.getDay();
+        const pad=n=>String(n).padStart(2,'0');
+        const tglStr=curTime.getFullYear()+'-'+pad(curTime.getMonth()+1)+'-'+pad(curTime.getDate());
+        if(hari===0||hari===6||getLiburSet(curTime.getFullYear()).has(tglStr)) weSc=tambahW;
+      }
+      const hargaBlok=baseHarga+kamarSc+weSc;
+      totalHarga+=hargaBlok;
+      rincian.push({jam:minD,label:minD+' jam',base:baseHarga,kamarSc,weSc,total:hargaBlok,
+        tgl:curTime?curTime.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}):null});
+      break;
+    }
+  }
+  return {total:Math.round(totalHarga), rincian};
+}
+
+
+function onDurasiChange(){
+  const val=document.getElementById('ci-durasi')?.value;
+  const customWrap=document.getElementById('ci-custom-wrap');
+  if(val==='custom'){
+    // Tampilkan picker tanggal keluar
+    if(customWrap) customWrap.style.display='';
+    // Set default keluar = masuk + 1 hari
+    const masukEl=document.getElementById('ci-masuk');
+    const keluarEl=document.getElementById('ci-keluar-custom');
+    if(masukEl&&keluarEl&&!keluarEl.value){
+      const masuk=strToDate(masukEl.value||nowStr());
+      const defaultKeluar=new Date(masuk.getTime()+24*3600000);
+      const pad=n=>String(n).padStart(2,'0');
+      keluarEl.value=defaultKeluar.getFullYear()+'-'+pad(defaultKeluar.getMonth()+1)+'-'+pad(defaultKeluar.getDate())+'T'+pad(defaultKeluar.getHours())+':'+pad(defaultKeluar.getMinutes());
+    }
+    updateEstCustom();
+  } else {
+    if(customWrap) customWrap.style.display='none';
+    updateEst();
+  }
+}
+
+function updateEstCustom(){
+  const masukEl=document.getElementById('ci-masuk');
+  const keluarEl=document.getElementById('ci-keluar-custom');
+  const box=document.getElementById('est-box');
+  const val=document.getElementById('est-val');
+  const dur=document.getElementById('est-dur');
+  const info=document.getElementById('ci-custom-info');
+  const payWrap=document.getElementById('ci-pay-wrap');
+  if(!masukEl||!keluarEl||!box) return;
+
+  const masuk=strToDate(masukEl.value||nowStr());
+  const keluar=strToDate(keluarEl.value);
+  if(!keluarEl.value||keluar<=masuk){
+    box.style.display='none';
+    if(payWrap) payWrap.style.display='none';
+    if(info){info.textContent='Tanggal keluar harus setelah masuk!';info.style.display='';info.style.color='#DC2626';}
+    checkCiReady();
+    return;
+  }
+
+  // Hitung total jam
+  const totalMs=keluar-masuk;
+  const totalJamRaw=totalMs/3600000;
+  const totalJam=Math.round(totalJamRaw*10)/10;
+  const totalHari=Math.floor(totalMs/86400000);
+  const sisaJam=Math.round((totalMs%86400000)/3600000*10)/10;
+
+  // Hitung harga optimal: pecah jadi blok tarif terbesar
+  const tipe=selected?.tipe||'ac';
+  const loc=curLoc;
+  const kamar=selected?.kamar;
+  const masukDate=strToDate(masukEl.value||nowStr());
+  const hasil=hitungHargaCustom(tipe,loc,kamar,totalJam,masukDate);
+  const totalHarga=hasil.total;
+  const rincian=hasil.rincian;
+
+  // Info durasi
+  let durasiLabel='';
+  if(totalHari>0) durasiLabel=totalHari+' hari';
+  if(sisaJam>0) durasiLabel+=(durasiLabel?' ':'')+sisaJam+' jam';
+  if(!durasiLabel) durasiLabel=totalJam+' jam';
+
+  if(info){
+    info.style.display='';
+    let rincHtml='<div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:6px">📋 Rincian perhitungan</div>';
+    rincian.forEach(r=>{
+      const isWE=r.weSc>0;
+      const isKamar=r.kamarSc>0;
+      rincHtml+=
+        '<div style="background:#fff;border-radius:8px;padding:7px 10px;margin-bottom:5px;border:1px solid '+(isWE?'#FED7AA':'#BFDBFE')+'">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center">'+
+            '<span style="font-size:12px;font-weight:600;color:#0F172A">'+(r.tgl?r.tgl+' &nbsp;':'')+'<b>'+r.label+'</b></span>'+
+            '<span style="font-size:13px;font-weight:800;color:#16A34A">Rp '+r.total.toLocaleString('id-ID')+'</span>'+
+          '</div>'+
+          '<div style="font-size:11px;color:#64748B;margin-top:3px">'+
+            'Tarif: Rp '+r.base.toLocaleString('id-ID')+
+            (isWE?' &nbsp;+&nbsp; <span style="color:#e67e22;font-weight:700">Rp '+r.weSc.toLocaleString('id-ID')+' 🟠 weekend/libur</span>':'')+
+            (isKamar?' &nbsp;+&nbsp; <span style="color:#7C3AED;font-weight:700">Rp '+r.kamarSc.toLocaleString('id-ID')+' kamar</span>':'')+
+          '</div>'+
+        '</div>';
+    });
+    // Total rincian
+    rincHtml+='<div style="display:flex;justify-content:space-between;padding:6px 10px;background:#1D4ED8;border-radius:8px;margin-top:2px">'+
+      '<span style="font-size:12px;font-weight:700;color:#fff">Total '+durasiLabel+'</span>'+
+      '<span style="font-size:14px;font-weight:800;color:#fff">Rp '+totalHarga.toLocaleString('id-ID')+'</span>'+
+    '</div>';
+    info.innerHTML=rincHtml;
+  }
+
+  box.style.display='';
+  if(val) val.textContent='Rp '+totalHarga.toLocaleString('id-ID');
+  const keluarStr=keluar.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  if(dur) dur.textContent=durasiLabel+' · Keluar: '+keluarStr;
+  if(payWrap) payWrap.style.display='';
+  checkCiReady();
+}
+
 function checkCiReady(){
-  const durasi=parseFloat(document.getElementById('ci-durasi')?.value)||0;
+  const durasiVal=document.getElementById('ci-durasi')?.value;
   const btn=document.getElementById('btn-do-ci');
   if(!btn)return;
-  if(durasi&&ciPay){
+  // Custom mode: cek apakah tanggal keluar valid
+  let durasiOk=false;
+  if(durasiVal==='custom'){
+    const masuk=strToDate(document.getElementById('ci-masuk')?.value||nowStr());
+    const keluarEl=document.getElementById('ci-keluar-custom');
+    durasiOk=keluarEl?.value&&strToDate(keluarEl.value)>masuk;
+  } else {
+    durasiOk=parseFloat(durasiVal)>0;
+  }
+  if(durasiOk&&ciPay){
     btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
     btn.textContent='Check-in & Bayar '+(ciPay==='cash'?'Cash':'Transfer');
   } else {
@@ -1494,21 +1688,33 @@ function checkCiReady(){
   }
 }
 
-function updateEst(){
-  const masuk=document.getElementById('ci-masuk')&&document.getElementById('ci-masuk').value;
+function hitungKeluarDate(masukDate, durasi){
+  // Khusus 24 jam: keluar jam 12.00 siang hari berikutnya
+  if(durasi===24){
+    const besok=new Date(masukDate);
+    besok.setDate(besok.getDate()+1);
+    besok.setHours(12,0,0,0);
+    return besok;
+  }
+  // Durasi lain: dari jam masuk + durasi
+  return new Date(masukDate.getTime()+durasi*3600000);
+}
+
+function updateEst(){  const masuk=document.getElementById('ci-masuk')&&document.getElementById('ci-masuk').value;
   const durEl=document.getElementById('ci-durasi');
   const durasi=durEl?parseFloat(durEl.value)||0:0;
   const box=document.getElementById('est-box');
   const payWrap=document.getElementById('ci-pay-wrap');
   if(!masuk||!durasi||!box){if(box)box.style.display='none';if(payWrap)payWrap.style.display='none';checkCiReady();return;}
   const masukDate=strToDate(masuk);
-  const keluarDate=new Date(masukDate.getTime()+durasi*3600000);
+  const keluarDate=hitungKeluarDate(masukDate,durasi);
   const tipeKamar=selected&&LOKASI[curLoc]&&LOKASI[curLoc].nonac.includes(selected.kamar)?'nonac':'ac';
   const harga=getHargaFixed(tipeKamar,durasi,curLoc,selected?.kamar);
   box.style.display='';
   if(payWrap)payWrap.style.display='';
   document.getElementById('est-val').textContent='Rp '+Math.round(harga).toLocaleString('id-ID');
-  document.getElementById('est-dur').textContent=durasi+' jam · Keluar: '+keluarDate.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const keluarLabel=durasi===24?'12:00 (checkout jam 12)':keluarDate.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('est-dur').textContent=durasi+' jam · Keluar: '+keluarLabel;
   checkCiReady();
 }
 
@@ -1530,11 +1736,33 @@ function doCheckin(n,tipe){
   const anon=document.getElementById('ci-anon')?.checked;
   const namaInput=document.getElementById('ci-nama').value.trim();
   const nama=anon?'Tamu':(namaInput||'');
-  // Pakai jam masuk dari input (bisa manual atau otomatis)
   const masuk=document.getElementById('ci-masuk')?.value||nowStr();
-  const durasi=parseFloat(document.getElementById('ci-durasi').value)||0;
-  const harga=getHargaFixed(tipe,durasi,curLoc,n);
-  const total=harga;
+  const durasiVal=document.getElementById('ci-durasi').value;
+  const isCustom=durasiVal==='custom';
+
+  let durasi, harga, total, keluar;
+  const masukDate=strToDate(masuk);
+
+  if(isCustom){
+    const keluarCustom=document.getElementById('ci-keluar-custom')?.value;
+    if(!keluarCustom){showToast('Pilih tanggal keluar dulu!');return;}
+    const keluarDate=strToDate(keluarCustom);
+    if(keluarDate<=masukDate){showToast('Tanggal keluar harus setelah masuk!');return;}
+    const totalMs=keluarDate-masukDate;
+    durasi=Math.round(totalMs/3600000*10)/10;
+    const hasilCI=hitungHargaCustom(tipe,curLoc,n,durasi,masukDate);
+    total=hasilCI.total;
+    harga=total;
+    keluar=keluarCustom;
+  } else {
+    durasi=parseFloat(durasiVal)||0;
+    harga=getHargaFixed(tipe,durasi,curLoc,n);
+    total=harga;
+    const keluarDate=hitungKeluarDate(masukDate,durasi);
+    const pad=n=>String(n).padStart(2,'0');
+    keluar=keluarDate.getFullYear()+'-'+pad(keluarDate.getMonth()+1)+'-'+pad(keluarDate.getDate())+'T'+pad(keluarDate.getHours())+':'+pad(keluarDate.getMinutes());
+  }
+
   if(!nama){
     const t=document.getElementById('ci-toast');t.className='toast err';t.textContent='Masukkan nama tamu atau centang "Tanpa nama"!';t.style.display='';
     setTimeout(()=>t.style.display='none',2500);return;
@@ -1547,9 +1775,6 @@ function doCheckin(n,tipe){
     const t=document.getElementById('ci-toast');t.className='toast err';t.textContent='Pilih metode pembayaran dulu!';t.style.display='';
     setTimeout(()=>t.style.display='none',2500);return;
   }
-  const masukDate=strToDate(masuk);
-  const keluarDate=new Date(masukDate.getTime()+durasi*3600000);
-  const keluar=keluarDate.getFullYear()+'-'+String(keluarDate.getMonth()+1).padStart(2,'0')+'-'+String(keluarDate.getDate()).padStart(2,'0')+'T'+String(keluarDate.getHours()).padStart(2,'0')+':'+String(keluarDate.getMinutes()).padStart(2,'0');
   const karyaLabel=curJabatan==='parttime'?curKarya+' (Part Time)':curKarya;
   active.push({id:Date.now(),loc:curLoc,kamar:n,namaKode:getNama(curLoc,n),tipe,nama,karya:karyaLabel,masuk,keluar,durasisewa:durasi,tarif:harga,total,metodeBayar:ciPay});
   ciPay='';
@@ -2012,6 +2237,116 @@ function updateTarifEntry(tblKey, dur, val){
   save();
   const t=document.getElementById('tarif-ok');if(t){t.style.display='';setTimeout(()=>t.style.display='none',1500);}
 }
+
+// ===== LIBUR NASIONAL INDONESIA =====
+// Cache libur dari API per tahun
+const LIBUR_CACHE_API={};
+// Fallback data hardcode 2025-2026
+const LIBUR_FALLBACK={
+  '2025':['2025-01-01','2025-01-27','2025-01-28','2025-01-29','2025-02-12',
+    '2025-03-29','2025-03-31','2025-04-01','2025-04-18','2025-05-01',
+    '2025-05-12','2025-05-29','2025-06-01','2025-06-06','2025-06-27',
+    '2025-08-17','2025-09-05','2025-10-02','2025-12-25','2025-12-26'],
+  '2026':['2026-01-01','2026-01-16','2026-01-28','2026-01-29','2026-01-30',
+    '2026-02-17','2026-03-19','2026-03-20','2026-03-21','2026-03-22',
+    '2026-04-03','2026-05-01','2026-05-14','2026-05-24','2026-05-25',
+    '2026-05-27','2026-05-28','2026-06-01','2026-06-17','2026-08-17',
+    '2026-08-25','2026-09-24','2026-12-25','2026-12-26']
+};
+
+function getLiburSet(year){
+  const y=String(year);
+  if(LIBUR_CACHE_API[y]) return LIBUR_CACHE_API[y];
+  // Pakai fallback dulu, sambil fetch dari API
+  const fallback=new Set(LIBUR_FALLBACK[y]||[]);
+  LIBUR_CACHE_API[y]=fallback;
+  // Fetch dari API (async, update cache jika berhasil)
+  fetch('https://api-harilibur.vercel.app/api?year='+y)
+    .then(r=>r.json())
+    .then(data=>{
+      if(Array.isArray(data)&&data.length>0){
+        const set=new Set();
+        data.forEach(h=>{
+          if(h.holiday_date) set.add(h.holiday_date.slice(0,10));
+        });
+        LIBUR_CACHE_API[y]=set;
+        // Re-run autoDetect kalau sedang di form checkin
+        if(document.getElementById('ci-surcharge')) autoDetectSurcharge();
+      }
+    })
+    .catch(()=>{}); // Kalau gagal, tetap pakai fallback
+  return fallback;
+}
+
+// Keep LIBUR_NASIONAL for backward compat
+const LIBUR_NASIONAL=new Set([...( LIBUR_FALLBACK['2025']||[]),...(LIBUR_FALLBACK['2026']||[])]);
+
+function isWeekendOrHoliday(date){
+  const d=date instanceof Date?date:new Date(date);
+  const hari=d.getDay();
+  const pad=n=>String(n).padStart(2,'0');
+  const tglStr=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  return hari===0||hari===6||getLiburSet(d.getFullYear()).has(tglStr);
+}
+
+function autoDetectSurcharge(){
+  const masukEl=document.getElementById('ci-masuk');
+  const el=document.getElementById('ci-surcharge');
+  const label=document.getElementById('ci-surcharge-label');
+  if(!masukEl||!el||!label){return;}
+
+  // Ambil nilai input jam masuk langsung
+  const rawVal=masukEl.value;
+  let masukDate;
+  if(rawVal&&rawVal.length>=10){
+    // Parse manual: YYYY-MM-DDTHH:mm
+    const parts=rawVal.split('T');
+    const d=parts[0].split('-').map(Number);
+    const t=(parts[1]||'00:00').split(':').map(Number);
+    masukDate=new Date(d[0],d[1]-1,d[2],t[0]||0,t[1]||0,0);
+  } else {
+    masukDate=new Date();
+  }
+
+  const hariIdx=masukDate.getDay(); // 0=Minggu,6=Sabtu
+  const hariNama=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][hariIdx];
+  const y=masukDate.getFullYear();
+  const mo=String(masukDate.getMonth()+1).padStart(2,'0');
+  const dd=String(masukDate.getDate()).padStart(2,'0');
+  const tglStr=y+'-'+mo+'-'+dd;
+
+  const isWeekend=hariIdx===0||hariIdx===6;
+  const liburSet=getLiburSet(y);
+  const isLibur=liburSet.has(tglStr);
+  const isHoliday=isWeekend||isLibur;
+
+  const tambahW=tarif.tambahWeekend||10000;
+
+  if(isHoliday){
+    el.dataset.active='1';
+    el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e67e22;background:#fff8f0;font-size:12px;font-weight:600;color:#e67e22;margin-bottom:10px;display:flex;align-items:center;gap:6px';
+    const info=isLibur?'🔴 Libur Nasional':(hariIdx===6?'📅 Sabtu':'📅 Minggu');
+    label.innerHTML=info+' &nbsp;—&nbsp; <b>+Rp '+tambahW.toLocaleString('id-ID')+'</b> otomatis ✓';
+  } else {
+    el.dataset.active='0';
+    el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #BFDBFE;background:#F8FBFF;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px';
+    label.textContent=hariNama+' — Hari biasa';
+  }
+
+  // Rebuild dropdown durasi dengan/tanpa surcharge
+  if(selected){
+    const tipe=selected.tipe||'ac';
+    const opts=getDurasiOptions(tipe,curLoc,selected.kamar);
+    const sel=document.getElementById('ci-durasi');
+    if(sel){
+      const curVal=sel.value;
+      sel.innerHTML='<option value="">— pilih durasi —</option>'+opts.map(o=>'<option value="'+o.j+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+'<option value="custom">✏️ Custom (pilih tanggal keluar)</option>';
+      if(curVal) sel.value=curVal;
+    }
+  }
+  updateEst();
+}
+
 
 function getSurcharge(tipe){
   if(document.getElementById('ci-surcharge')?.dataset.active==='1') return tarif.tambahWeekend||10000;
@@ -2827,6 +3162,65 @@ function hapusKeuangan(id){hapusKeuanganLap(id);}
 // ===== LIBUR =====
 
 const HARI=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+
+function loadDelKaryaList(){
+  const sel=document.getElementById('del-karya-sel');
+  if(!sel) return;
+  // Kumpulkan semua nama unik dari history + keuangan
+  const names=new Set();
+  history.forEach(h=>{if(h.karya) names.add(h.karya);});
+  keuangan.forEach(k=>{if(k.karya) names.add(k.karya);});
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— pilih karyawan —</option>'+
+    [...names].sort().map(n=>'<option value="'+n+'">'+(n||'(tanpa nama)')+'</option>').join('');
+  if(cur) sel.value=cur;
+  // Reset preview
+  document.getElementById('del-karya-preview').style.display='none';
+  document.getElementById('del-karya-btn').style.display='none';
+}
+
+function previewHapusKarya(){
+  const nama=document.getElementById('del-karya-sel')?.value;
+  const preview=document.getElementById('del-karya-preview');
+  const btn=document.getElementById('del-karya-btn');
+  if(!nama||!preview||!btn){
+    if(preview) preview.style.display='none';
+    if(btn) btn.style.display='none';
+    return;
+  }
+  const trx=history.filter(h=>h.karya===nama);
+  const keu=keuangan.filter(k=>k.karya===nama);
+  const totalTrx=trx.reduce((s,h)=>s+(h.total||0),0);
+  const totalKeu=keu.reduce((s,k)=>s+(k.nominal||0),0);
+  preview.style.display='';
+  preview.innerHTML=
+    '<div style="font-weight:700;color:#B91C1C;margin-bottom:6px">⚠ Data yang akan dihapus:</div>'+
+    '<div style="color:#374151">👤 Karyawan: <b>'+nama+'</b></div>'+
+    '<div style="color:#374151">📋 Transaksi: <b>'+trx.length+' transaksi</b> (Rp '+totalTrx.toLocaleString('id-ID')+')</div>'+
+    '<div style="color:#374151">💰 Keuangan: <b>'+keu.length+' catatan</b> (Rp '+totalKeu.toLocaleString('id-ID')+')</div>'+
+    '<div style="color:#DC2626;font-size:12px;margin-top:6px;font-weight:600">⚠ Aksi ini tidak bisa dibatalkan!</div>';
+  btn.style.display='';
+  btn.textContent='🗑 Hapus '+trx.length+' transaksi & '+keu.length+' catatan keuangan';
+}
+
+function hapusDataKarya(){
+  const nama=document.getElementById('del-karya-sel')?.value;
+  if(!nama){showToast('Pilih karyawan dulu!');return;}
+  const jumlahTrx=history.filter(h=>h.karya===nama).length;
+  const jumlahKeu=keuangan.filter(k=>k.karya===nama).length;
+  history=history.filter(h=>h.karya!==nama);
+  keuangan=keuangan.filter(k=>k.karya!==nama);
+  save();
+  // Reset UI
+  document.getElementById('del-karya-preview').style.display='none';
+  document.getElementById('del-karya-btn').style.display='none';
+  document.getElementById('del-karya-sel').value='';
+  const ok=document.getElementById('del-karya-ok');
+  ok.textContent='✅ Dihapus: '+jumlahTrx+' transaksi & '+jumlahKeu+' catatan '+nama;
+  ok.style.display='';
+  setTimeout(()=>{ok.style.display='none';loadDelKaryaList();},3000);
+  showToast('Data '+nama+' berhasil dihapus!',false);
+}
 
 function resetActiveData(){
   
