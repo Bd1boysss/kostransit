@@ -541,16 +541,28 @@ input,select,textarea{font-size:16px!important;}
           </div>
         </div>
         <div style="border-top:1px solid #eee;padding-top:14px;margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px">⏱ Harga Tambah Jam (1 jam saja)</div>
-          <div style="font-size:12px;color:#888;margin-bottom:10px">Harga khusus untuk tambah 1 jam. Lebih dari 1 jam otomatis ikut tarif normal.</div>
-          <div class="set-grid">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:6px">⏱ Harga Tambah Jam</div>
+          <div style="font-size:12px;color:#888;margin-bottom:10px">Harga per jam saat tambah waktu. Weekend/libur otomatis pakai harga weekend.</div>
+          <div style="font-size:12px;font-weight:600;color:#0F172A;margin-bottom:6px">📅 Hari biasa</div>
+          <div class="set-grid" style="margin-bottom:10px">
             <div class="field">
-              <label>1 jam AC (Rp)</label>
-              <input type="number" id="set-tambah-jam-ac" step="5000" min="0" placeholder="50000" onchange="saveTarif()">
+              <label>AC — 1 jam (Rp)</label>
+              <input type="number" id="set-tambah-jam-ac" step="5000" min="0" placeholder="30000" onchange="saveTarif()">
             </div>
             <div class="field">
-              <label>1 jam Non-AC (Rp)</label>
-              <input type="number" id="set-tambah-jam-nonac" step="5000" min="0" placeholder="30000" onchange="saveTarif()">
+              <label>Non-AC — 1 jam (Rp)</label>
+              <input type="number" id="set-tambah-jam-nonac" step="5000" min="0" placeholder="20000" onchange="saveTarif()">
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:#e67e22;margin-bottom:6px">🟠 Weekend / Libur</div>
+          <div class="set-grid">
+            <div class="field">
+              <label>AC — 1 jam (Rp)</label>
+              <input type="number" id="set-tambah-jam-ac-we" step="5000" min="0" placeholder="50000" onchange="saveTarif()">
+            </div>
+            <div class="field">
+              <label>Non-AC — 1 jam (Rp)</label>
+              <input type="number" id="set-tambah-jam-nonac-we" step="5000" min="0" placeholder="30000" onchange="saveTarif()">
             </div>
           </div>
         </div>
@@ -730,9 +742,9 @@ function updateDropdownLabels(){
   const opt1=document.getElementById('opt-shift1');
   const opt2=document.getElementById('opt-shift2');
   const optPt=document.getElementById('opt-pt');
-  if(opt1)opt1.textContent='Shift 1 ('+s1s+'–'+s1e+')';
-  if(opt2)opt2.textContent='Shift 2 ('+s1e+'–'+s1s+')';
-  if(optPt)optPt.textContent='Part Time ('+pts+'–'+pte+')';
+  if(opt1)opt1.textContent='Shift 1 ('+s1s+'-'+s1e+')';
+  if(opt2)opt2.textContent='Shift 2 ('+s1e+'-'+s1s+')';
+  if(optPt)optPt.textContent='Part Time ('+pts+'-'+pte+')';
 }
 
 function showSyncStatus(msg,ok=true){
@@ -944,7 +956,7 @@ function loginKarya(){
   errEl.textContent='';
   if(!n){document.getElementById('login-nama').style.borderColor='#F09595';return;}
   if(!curLokGrp){errEl.textContent='Pilih lokasi kerja dulu!';return;}
-  // Check password — Part Time pakai PIN khusus
+  // Check password - Part Time pakai PIN khusus
   let passOK=false;
   if(curJabatan==='parttime'){
     passOK=pass===(tarif.passPartTime||'9999');
@@ -1202,7 +1214,7 @@ function renderHistoryK(){
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(a.total||0).toLocaleString('id-ID')+'</span>'+
         '</div>'+
-        '<div style="font-size:11px;color:#64748B">'+tglStr+' &nbsp;'+masukStr+' → '+keluarStr+
+        '<div style="font-size:11px;color:#64748B">'+tglStr+' &nbsp;'+masukStr+' -> '+keluarStr+
           ' &nbsp;·&nbsp; '+(a.durasisewa||0)+' jam &nbsp;·&nbsp; '+(a.tipe||'').toUpperCase()+
           ' &nbsp;·&nbsp; '+(a.metodeBayar||'-')+'</div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:4px">'+
@@ -1226,7 +1238,7 @@ function renderHistoryK(){
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(h.total||0).toLocaleString('id-ID')+'</span>'+
         '</div>'+
-        '<div style="font-size:11px;color:#64748B">'+tglStr+' &nbsp;'+masukStr+' → '+keluarStr+
+        '<div style="font-size:11px;color:#64748B">'+tglStr+' &nbsp;'+masukStr+' -> '+keluarStr+
           ' &nbsp;·&nbsp; '+(h.durasisewa||h.durasi||0)+' jam &nbsp;·&nbsp; '+(h.tipe||'').toUpperCase()+
           ' &nbsp;·&nbsp; '+(h.metodeBayar||'-')+'</div>'+
         '<div style="font-size:11px;color:#94A3B8;margin-top:2px">Tamu: '+(h.nama||'Tamu')+' &nbsp;·&nbsp; <span style="color:#7C3AED;font-weight:600">'+h.karya+'</span></div>'+
@@ -1289,7 +1301,7 @@ function renderHistorySemua(){
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(a.total||0).toLocaleString('id-ID')+'</span>'+
         '</div>'+
-        '<div style="font-size:11px;color:#64748B">'+tglStr+' '+masukStr+' → '+keluarStr+' &nbsp;·&nbsp; '+(a.tipe||'').toUpperCase()+'</div>'+
+        '<div style="font-size:11px;color:#64748B">'+tglStr+' '+masukStr+' -> '+keluarStr+' &nbsp;·&nbsp; '+(a.tipe||'').toUpperCase()+'</div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:4px">'+
           '<span style="font-size:11px;color:#7C3AED;font-weight:600">'+a.karya+'</span>'+
           (sisaStr?'<span style="font-size:11px;font-weight:700;color:'+(expired?'#DC2626':'#e67e22')+'">'+sisaStr+'</span>':'')+
@@ -1311,7 +1323,7 @@ function renderHistorySemua(){
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(h.total||0).toLocaleString('id-ID')+'</span>'+
         '</div>'+
-        '<div style="font-size:11px;color:#64748B">'+tglStr+' '+masukStr+' → '+keluarStr+
+        '<div style="font-size:11px;color:#64748B">'+tglStr+' '+masukStr+' -> '+keluarStr+
           ' &nbsp;·&nbsp; '+(h.tipe||'').toUpperCase()+' &nbsp;·&nbsp; '+(h.metodeBayar||'-')+'</div>'+
         '<div style="font-size:11px;margin-top:2px">'+
           '<span style="color:#7C3AED;font-weight:600">'+h.karya+'</span>'+
@@ -1361,7 +1373,7 @@ function renderHistoryOtomatis(myHistory, myKeu, s1s, s1e, pts, pte){
     const dates=arr.map(h=>strToDate(h.masuk||h.keluarAktual));
     const mn=new Date(Math.min(...dates)),mx=new Date(Math.max(...dates));
     const fmt=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});
-    return mn.toDateString()===mx.toDateString()?fmt(mn):fmt(mn)+' – '+fmt(mx);
+    return mn.toDateString()===mx.toDateString()?fmt(mn):fmt(mn)+' - '+fmt(mx);
   }
 
   function shiftCard(label,color,bgColor,arr,jamInfo){
@@ -1409,9 +1421,9 @@ function renderHistoryOtomatis(myHistory, myKeu, s1s, s1e, pts, pte){
   '</div>';
 
   // Shift cards
-  html+=shiftCard('Shift 1','#16A34A','#F0FDF4',s1,s1s+'–'+s1e);
-  html+=shiftCard('Shift 2','#2563EB','#EFF6FF',s2,s1e+'–'+s1s);
-  html+=shiftCard('Part Time','#7C3AED','#F5F3FF',pt,pts+'–'+pte);
+  html+=shiftCard('Shift 1','#16A34A','#F0FDF4',s1,s1s+'-'+s1e);
+  html+=shiftCard('Shift 2','#2563EB','#EFF6FF',s2,s1e+'-'+s1s);
+  html+=shiftCard('Part Time','#7C3AED','#F5F3FF',pt,pts+'-'+pte);
 
   // Per karyawan
   if(karyaList.length){
@@ -1565,10 +1577,10 @@ function oNavTab(t,el){
     const pte_=tarif.ptEnd||'00:00';
     const opt1=document.getElementById('opt-shift1');
     const opt2=document.getElementById('opt-shift2');
-    if(opt1)opt1.textContent='Shift 1 ('+s1s+'–'+s1e+')';
-    if(opt2)opt2.textContent='Shift 2 ('+s1e+'–'+s1s+')';
+    if(opt1)opt1.textContent='Shift 1 ('+s1s+'-'+s1e+')';
+    if(opt2)opt2.textContent='Shift 2 ('+s1e+'-'+s1s+')';
     const optPt=document.getElementById('opt-pt');
-    if(optPt)optPt.textContent='Part Time ('+pts_+'–'+pte_+')';
+    if(optPt)optPt.textContent='Part Time ('+pts_+'-'+pte_+')';
 
     // Auto-detect shift berdasarkan jam sekarang & pengaturan custom
     const autoShift=isInShift(now,s1s,s1e)?'shift1-today':'shift2-today';
@@ -1595,8 +1607,12 @@ function oNavTab(t,el){
     const tj_ac=document.getElementById('set-tambah-jam-ac');
     const tj_nonac=document.getElementById('set-tambah-jam-nonac');
     if(tw)tw.value=tarif.tambahWeekend||10000;
-    if(tj_ac)tj_ac.value=tarif.tambahJamAC||50000;
-    if(tj_nonac)tj_nonac.value=tarif.tambahJamNonAC||30000;
+    if(tj_ac)tj_ac.value=tarif.tambahJamAC||30000;
+    if(tj_nonac)tj_nonac.value=tarif.tambahJamNonAC||20000;
+    const tj_ac_we=document.getElementById('set-tambah-jam-ac-we');
+    const tj_nonac_we=document.getElementById('set-tambah-jam-nonac-we');
+    if(tj_ac_we)tj_ac_we.value=tarif.tambahJamACWE||50000;
+    if(tj_nonac_we)tj_nonac_we.value=tarif.tambahJamNonACWE||30000;
     const p123=document.getElementById('set-pass-123');
     const p4=document.getElementById('set-pass-4');
     const ppt=document.getElementById('set-pass-parttime');
@@ -1637,7 +1653,7 @@ function strToDate(str){
   // Handle both ISO and datetime-local format
   if(!str)return new Date();
   if(str.includes('Z')||str.includes('+'))return new Date(str);
-  // datetime-local format: YYYY-MM-DDTHH:mm — treat as local time
+  // datetime-local format: YYYY-MM-DDTHH:mm - treat as local time
   const [datePart,timePart]=str.split('T');
   const [y,mo,d]=datePart.split('-').map(Number);
   const [h,mi]=(timePart||'00:00').split(':').map(Number);
@@ -1667,7 +1683,7 @@ function elapsed(masuk){
 }
 
 function countup(masuk,keluar){
-  if(!masuk)return{text:'—',pct:0,warn:false,habis:false};
+  if(!masuk)return{text:'-',pct:0,warn:false,habis:false};
   const masukDate=strToDate(masuk);
   const keluarDate=keluar?strToDate(keluar):null;
   const elapsed=new Date()-masukDate;
@@ -1690,7 +1706,7 @@ function cdHtml(occ){
   const keluarDate=occ.keluar?strToDate(occ.keluar):null;
   const belumMulai=masukDate&&masukDate>now;
 
-  // Kalau belum mulai — tampilkan "Mulai pukul XX:XX" bukan countdown
+  // Kalau belum mulai - tampilkan "Mulai pukul XX:XX" bukan countdown
   if(belumMulai){
     const masukStr=masukDate.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit'});
     const keluarStr=keluarDate?keluarDate.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';
@@ -1704,7 +1720,7 @@ function cdHtml(occ){
   const color=cd.habis?'#c0392b':cd.warn?'#e67e22':'#185FA5';
   const barColor=cd.habis?'#e74c3c':cd.warn?'#e67e22':'#378ADD';
   const isToday=keluarDate&&keluarDate.toDateString()===now.toDateString();
-  const jamStr=keluarDate?keluarDate.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit'}):'—';
+  const jamStr=keluarDate?keluarDate.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';
   const tglStr=keluarDate?keluarDate.toLocaleString('id-ID',{day:'2-digit',month:'short'}):'';
   let sisaStr='';
   if(keluarDate&&!cd.habis){const ms=keluarDate-now;const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);const s=Math.floor((ms%60000)/1000);sisaStr=(h>0?h+'j ':'')+m+'m '+s+'d';}
@@ -1724,7 +1740,7 @@ function renderGrid(){
   const rooms=[...loc.ac.map(n=>({n,tipe:'ac'})),...loc.nonac.map(n=>({n,tipe:'nonac'}))];
   document.getElementById('kamar-grid').innerHTML=rooms.map(r=>{
     const occ=active.find(a=>a.loc==curLoc&&a.kamar==r.n);
-    const isClean=cleaning.find(c=>c.loc==curLoc&&c.kamar==r.n);
+    const isClean=cleaning.find(c=>String(c.loc)===String(curLoc)&&String(c.kamar)===String(r.n));
     const isSel=selected&&selected.loc==curLoc&&selected.kamar==r.n;
     const now2=new Date();
     const belumMulai=occ&&occ.masuk&&strToDate(occ.masuk)>now2;
@@ -1747,7 +1763,7 @@ function renderGrid(){
 
 function selectKamar(n,tipe){
   const occ=active.find(a=>a.loc==curLoc&&a.kamar==n);
-  const isClean=cleaning.find(c=>c.loc==curLoc&&c.kamar==n);
+  const isClean=cleaning.find(c=>String(c.loc)===String(curLoc)&&String(c.kamar)===String(n));
   selected={loc:curLoc,kamar:n,tipe};
   renderGrid();
   if(occ) showCheckout(occ);
@@ -1808,14 +1824,14 @@ function rebuildDurasiOptions(tipe){
   const sel=document.getElementById('ci-durasi');
   if(!sel)return;
   const curVal=sel.value;
-  sel.innerHTML='<option value="">— pilih durasi —</option>'+
-    opts.map(o=>'<option value="'+o.j+'"'+(curVal==o.j?' selected':'')+'>'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('');
+  sel.innerHTML='<option value="">- pilih durasi -</option>'+
+    opts.map(o=>'<option value="'+o.j+'"'+(curVal==o.j?' selected':'')+'>'+o.label+' - Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('');
   updateEst();
 }
 
 function showCheckin(n,tipe){
   const tambahW=tarif.tambahWeekend||10000;
-  document.getElementById('panel-title').textContent='Check-in — '+getNama(curLoc,n);
+  document.getElementById('panel-title').textContent='Check-in - '+getNama(curLoc,n);
   document.getElementById('panel-sub').innerHTML=LOKASI[curLoc].nama+' · '+(tipe==='ac'?'AC':'Non-AC');
   document.getElementById('panel-body').innerHTML=
     '<div id="ci-toast" class="toast"></div>'+
@@ -1824,8 +1840,8 @@ function showCheckin(n,tipe){
     '<div id="ci-surcharge" data-active="0" style="width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px">🗓 <span id="ci-surcharge-label">Cek hari...</span></div>'+
     '<div class="p-field"><label>Durasi sewa</label>'+
     '<select id="ci-durasi" onchange="onDurasiChange()" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
-    '<option value="">— pilih durasi —</option>'+
-    getDurasiOptions(tipe,curLoc,n).map(o=>'<option value="'+o.j+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
+    '<option value="">- pilih durasi -</option>'+
+    getDurasiOptions(tipe,curLoc,n).map(o=>'<option value="'+o.j+'">'+o.label+' - Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
     '<option value="custom">✏️ Custom (pilih tanggal keluar)</option>'+
     '</select></div>'+
     '<div id="ci-custom-wrap" style="display:none;margin-bottom:10px">'+
@@ -1867,7 +1883,8 @@ function showCheckin(n,tipe){
     '<button class="btn-ci" id="btn-do-ci" onclick="doCheckin('+n+',\''+tipe+'\')" disabled style="opacity:0.4;cursor:not-allowed">Pilih durasi & pembayaran dulu</button>'+
     '<button class="btn-cancel" onclick="cancelAction()">Batal</button>';
   startJamMasukClock();
-  autoDetectSurcharge(); // langsung panggil, DOM sudah siap
+  // Pastikan DOM sudah ready sebelum detect
+  requestAnimationFrame(()=>autoDetectSurcharge());
 }
 
 let ciPay='';
@@ -2211,14 +2228,14 @@ function showCheckout(occ){
   const sisa=occ.keluar?strToDate(occ.keluar)-now3:0;
   const sudahLewat=!belumMulai&&sisa<=0;
   const badgeBayar=occ.metodeBayar==='cash'?'<span style="background:#EAF3DE;color:#27500A;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Cash</span>':'<span style="background:#E6F1FB;color:#0C447C;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Transfer</span>';
-  document.getElementById('panel-title').textContent='Kamar '+getNama(occ.loc,occ.kamar)+' — '+occ.nama;
+  document.getElementById('panel-title').textContent='Kamar '+getNama(occ.loc,occ.kamar)+' - '+occ.nama;
   document.getElementById('panel-sub').textContent=LOKASI[occ.loc].nama+' · '+(occ.tipe==='ac'?'AC':'Non-AC');
   document.getElementById('panel-body').innerHTML=
     '<div class="info-row"><span>Tamu</span><span>'+occ.nama+'</span></div>'+
-    '<div class="info-row"><span>Karyawan</span><span>'+(occ.karya||'—')+'</span></div>'+
+    '<div class="info-row"><span>Karyawan</span><span>'+(occ.karya||'-')+'</span></div>'+
     '<div class="info-row"><span>Jam masuk</span><span>'+masukStr+'</span></div>'+
     '<div class="info-row"><span>Jam keluar</span><span>'+keluarStr+'</span></div>'+
-    '<div class="info-row"><span>Durasi</span><span>'+(occ.durasisewa||'—')+' jam</span></div>'+
+    '<div class="info-row"><span>Durasi</span><span>'+(occ.durasisewa||'-')+' jam</span></div>'+
     '<div class="info-row"><span>Pembayaran</span><span>'+badgeBayar+'</span></div>'+
     '<hr style="border:none;border-top:1px solid #eee;margin:10px 0">'+
     '<div class="total-box" style="'+(belumMulai?'background:#FAEEDA':sudahLewat?'background:#FCEBEB':'background:#EAF3DE')+'">'+
@@ -2253,7 +2270,8 @@ function showCheckout(occ){
 function getTambahJamOptions(tipe, loc){
   // 1 jam: selalu ada dengan harga custom
   // 2 jam ke atas: ikut tarif normal
-  const custom1jam=tipe==='ac'?(tarif.tambahJamAC||50000):(tarif.tambahJamNonAC||30000);
+  const isWE=isWeekendOrHoliday(new Date());
+  const custom1jam=tipe==='ac'?(isWE?(tarif.tambahJamACWE||50000):(tarif.tambahJamAC||30000)):(isWE?(tarif.tambahJamNonACWE||30000):(tarif.tambahJamNonAC||20000));
   const normalOpts=getDurasiOptions(tipe, loc||1).filter(o=>o.j>1);
   return [
     {j:1, label:'1 jam', harga:custom1jam},
@@ -2266,32 +2284,36 @@ function showPerpanjang(id){
   if(!occ)return;
   const masukStr=strToDate(occ.masuk).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
   const keluarRencana=occ.keluar?strToDate(occ.keluar).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
-  document.getElementById('panel-title').textContent='Tambah jam — '+getNama(occ.loc,occ.kamar);
-  document.getElementById('panel-sub').textContent=occ.nama+' · '+LOKASI[occ.loc].nama;
-  document.getElementById('panel-body').innerHTML=
-    '<div class="info-row"><span>Tamu</span><span>'+occ.nama+'</span></div>'+
-    '<div class="info-row"><span>Jam masuk</span><span>'+masukStr+'</span></div>'+
-    '<div class="info-row"><span>Jam keluar sekarang</span><span>'+keluarRencana+'</span></div>'+
-    '<hr style="border:none;border-top:1px solid #eee;margin:12px 0">'+
-    '<div class="p-field"><label>Tambah berapa jam?</label>'+
-    '<select id="perp-tambah" onchange="updatePerpEst(\''+occ.id+'\')" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
-    '<option value="">— pilih tambahan —</option>'+
-    getTambahJamOptions(occ.tipe||'ac', occ.loc).map(o=>'<option value="'+o.j+'" data-harga="'+o.harga+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+
-    '</select></div>'+
-    '<div class="p-field"><label>Metode bayar tambahan</label>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">'+
-      '<button id="perp-pay-cash" onclick="selectPerpPay(\'cash\')" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#888">&#128181; Cash</button>'+
-      '<button id="perp-pay-transfer" onclick="selectPerpPay(\'transfer\')" style="padding:8px;border-radius:8px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#888">&#128242; Transfer</button>'+
-    '</div></div>'+
-    '<div class="total-box" id="perp-est-box" style="display:none">'+
-      '<div class="total-label">Biaya tambahan</div>'+
-      '<div class="total-val" id="perp-est-val">Rp 0</div>'+
-      '<div style="font-size:11px;color:#185FA5;margin-top:3px" id="perp-est-dur"></div>'+
-    '</div>';
+  const occId=occ.id;
+  document.getElementById('panel-title').textContent='Tambah jam - '+getNama(occ.loc,occ.kamar);
+  document.getElementById('panel-sub').textContent=LOKASI[occ.loc]?.nama||'';
+  document.getElementById('panel-body').innerHTML=[
+    '<div class="info-row"><span>Jam masuk</span><span>'+masukStr+'</span></div>',
+    '<div class="info-row"><span>Keluar sekarang</span><span style="font-weight:700;color:#DC2626">'+keluarRencana+'</span></div>',
+    '<hr style="border:none;border-top:1px solid #BFDBFE;margin:12px 0">',
+    '<div class="p-field"><label>Tambah berapa jam?</label>',
+    '<input type="number" id="perp-jam" min="1" max="72" placeholder="contoh: 2" oninput="updatePerpEst()" style="width:100%;padding:10px;border:1.5px solid #BFDBFE;border-radius:10px;background:#fff;outline:none;font-size:16px;font-weight:700"></div>',
+    '<div class="p-field"><label>Nominal dibayar (Rp)</label>',
+    '<input type="number" id="perp-nominal" min="0" step="1000" placeholder="otomatis dari tarif" oninput="this.dataset.manual=\'1\';updatePerpEst()" style="width:100%;padding:10px;border:1.5px solid #BFDBFE;border-radius:10px;background:#fff;outline:none;font-size:16px;font-weight:700">',
+    '<div id="perp-nominal-hint" style="font-size:11px;color:#94A3B8;margin-top:4px;font-weight:500"></div></div>',
+    '<div class="p-field"><label>Metode bayar</label>',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">',
+    '<button id="perp-pay-cash" onclick="selectPerpPay(&quot;cash&quot;)" style="padding:10px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#888;touch-action:manipulation">&#128181; Cash</button>',
+    '<button id="perp-pay-transfer" onclick="selectPerpPay(&quot;transfer&quot;)" style="padding:10px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#888;touch-action:manipulation">&#128242; Transfer</button>',
+    '</div></div>',
+    '<div id="perp-est-box" style="display:none;background:linear-gradient(135deg,#0F172A,#1E3A5F);border-radius:12px;padding:12px;margin-top:4px;color:#fff;text-align:center">',
+    '<div style="font-size:11px;color:#94A3B8;margin-bottom:2px">Keluar baru</div>',
+    '<div style="font-size:15px;font-weight:800" id="perp-est-dur"></div>',
+    '<div style="font-size:12px;color:#4ADE80;margin-top:4px;font-weight:600" id="perp-est-val"></div>',
+    '</div>'
+  ].join('');
+  perpPay='';
+  // Store occ id for doPerpanjang
+  window._perpId=occId;
   document.getElementById('panel-foot').style.display='';
   document.getElementById('panel-foot').innerHTML=
-    '<button class="btn-ci" id="btn-perp-ok" onclick="doPerpanjang(\''+occ.id+'\')" disabled style="opacity:0.4;cursor:not-allowed">Pilih jam & bayar dulu</button>'+
-    '<button class="btn-cancel" onclick="selectKamar('+occ.kamar+',\''+occ.tipe+'\')">Kembali</button>';
+    '<button class="btn-ci" id="btn-perp-ok" onclick="doPerpanjang(window._perpId)" disabled style="opacity:0.4;cursor:not-allowed">Isi jam & nominal dulu</button>'+
+    '<button class="btn-cancel" onclick="cancelAction()">Kembali</button>';
 }
 
 let perpPay='';
@@ -2306,48 +2328,81 @@ function selectPerpPay(m){
 }
 
 function checkPerpReady(){
-  const tambah=parseFloat(document.getElementById('perp-tambah')?.value)||0;
+  const jam=parseFloat(document.getElementById('perp-jam')?.value)||0;
+  const nominal=parseFloat(document.getElementById('perp-nominal')?.value)||0;
   const btn=document.getElementById('btn-perp-ok');if(!btn)return;
-  if(tambah&&perpPay){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';btn.textContent='Konfirmasi tambah jam';}
-  else{btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';}
+  if(jam>0&&nominal>0&&perpPay){
+    btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
+    btn.textContent='✅ Tambah '+jam+' jam - Rp '+Math.round(nominal).toLocaleString('id-ID');
+  } else {
+    btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';
+    btn.textContent='Isi jam & nominal dulu';
+  }
 }
 
-function updatePerpEst(id){
+function updatePerpEst(){
+  const id=window._perpId;
   const occ=active.find(a=>String(a.id)===String(id));if(!occ)return;
-  const sel=document.getElementById('perp-tambah');
-  const tambah=parseFloat(sel?.value)||0;
+  const jam=parseFloat(document.getElementById('perp-jam')?.value)||0;
+  const nominalEl=document.getElementById('perp-nominal');
   const box=document.getElementById('perp-est-box');
-  if(!tambah||!box){if(box)box.style.display='none';checkPerpReady();return;}
-  // Ambil harga dari data-harga option yang dipilih
-  const selectedOpt=sel?.options[sel.selectedIndex];
-  const harga=parseFloat(selectedOpt?.dataset.harga)||0;
+  if(!jam||!box){if(box)box.style.display='none';checkPerpReady();return;}
+
+  // Auto-hitung harga dari tarif tambah jam
+  const tipe=occ.tipe||'ac';
+  const loc=occ.loc;
+  const kamar=occ.kamar;
+  const isWE=isWeekendOrHoliday(new Date());
+  let autoHarga, hintLabel;
+  if(jam===1){
+    // 1 jam: pakai harga khusus tambah jam (biasa/weekend)
+    let harga1jam;
+    if(tipe==='ac') harga1jam=isWE?(tarif.tambahJamACWE||50000):(tarif.tambahJamAC||30000);
+    else harga1jam=isWE?(tarif.tambahJamNonACWE||30000):(tarif.tambahJamNonAC||20000);
+    autoHarga=harga1jam;
+    hintLabel='Tarif 1 jam'+(isWE?' (weekend/libur)':'');
+  } else {
+    // >1 jam: pakai tarif normal dari list
+    autoHarga=getHargaFixed(tipe,jam,loc,kamar);
+    if(!autoHarga){
+      // Kalau jam tidak ada di list, ambil yg terdekat
+      autoHarga=getHargaFixed(tipe,1,loc,kamar)*jam;
+    }
+    hintLabel='Tarif '+jam+' jam (list normal)';
+  }
+
+  // Isi nominal otomatis kalau belum diubah manual
+  if(nominalEl&&(!nominalEl.dataset.manual||nominalEl.dataset.manual==='0')){
+    nominalEl.value=Math.round(autoHarga);
+  }
+  // Hint harga normal
+  const hint=document.getElementById('perp-nominal-hint');
+  if(hint) hint.textContent=hintLabel+': Rp '+Math.round(autoHarga).toLocaleString('id-ID');
+
+  const nominal=parseFloat(nominalEl?.value)||0;
   const baseKeluar=occ.keluar?strToDate(occ.keluar):new Date();
-  const newKeluar=new Date(baseKeluar.getTime()+tambah*3600000);
+  const newKeluar=new Date(baseKeluar.getTime()+jam*3600000);
   box.style.display='';
-  document.getElementById('perp-est-val').textContent='Rp '+Math.round(harga).toLocaleString('id-ID');
-  document.getElementById('perp-est-dur').textContent='Keluar baru: '+newKeluar.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('perp-est-dur').textContent=newKeluar.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('perp-est-val').textContent='+ '+jam+' jam'+(nominal?' · Rp '+Math.round(nominal).toLocaleString('id-ID'):'');
   checkPerpReady();
 }
 
 function doPerpanjang(id){
   const idx=active.findIndex(a=>String(a.id)===String(id));if(idx<0)return;
-  const tambah=parseFloat(document.getElementById('perp-tambah')?.value)||0;
-  if(!tambah||!perpPay){showToast('Pilih tambahan jam & metode bayar dulu!');return;}
+  const tambah=parseFloat(document.getElementById('perp-jam')?.value)||0;
+  const nominal=parseFloat(document.getElementById('perp-nominal')?.value)||0;
+  if(!tambah||!nominal||!perpPay){showToast('Isi jam, nominal, dan metode bayar dulu!');return;}
   const baseKeluar=active[idx].keluar?strToDate(active[idx].keluar):new Date();
   const newKeluar=new Date(baseKeluar.getTime()+tambah*3600000);
-  const tipeKamar=active[idx].tipe||'ac';
-  // Ambil harga dari dropdown (sudah include custom 1jam atau tarif normal)
-  const sel=document.getElementById('perp-tambah');
-  const selectedOpt=sel?.options[sel.selectedIndex];
-  const biayaTambah=parseFloat(selectedOpt?.dataset.harga)||getHargaFixed(tipeKamar,tambah,active[idx].loc)||0;
-  // Simpan keluar baru sebagai local time string (bukan UTC)
   const pad=n=>String(n).padStart(2,'0');
   const keluarStr=newKeluar.getFullYear()+'-'+pad(newKeluar.getMonth()+1)+'-'+pad(newKeluar.getDate())+'T'+pad(newKeluar.getHours())+':'+pad(newKeluar.getMinutes());
   active[idx].keluar=keluarStr;
   active[idx].durasisewa=(active[idx].durasisewa||0)+tambah;
-  active[idx].total=(active[idx].total||0)+biayaTambah;
+  active[idx].total=(active[idx].total||0)+nominal;
   perpPay='';
   save();
+  showToast('Berhasil tambah '+tambah+' jam!',false);
   showCheckout(active[idx]);
   renderGrid();
 }
@@ -2370,7 +2425,7 @@ function batalOrder(id){
 
 function showCleaning(c){
   stopJamMasukClock();
-  document.getElementById('panel-title').textContent='🧹 '+c.namaKode+' — Bersihkan';
+  document.getElementById('panel-title').textContent='🧹 '+(c.namaKode||getNama(c.loc,c.kamar)||'Kamar')+' - Bersihkan';
   document.getElementById('panel-sub').textContent='Kamar perlu dibersihkan dulu sebelum siap pakai';
   document.getElementById('panel-foot').style.display='';
   document.getElementById('panel-body').innerHTML=
@@ -2380,7 +2435,7 @@ function showCleaning(c){
       '<div style="font-size:12px;color:#94A3B8">Setelah dibersihkan, tap tombol di bawah agar kamar kembali tersedia</div>'+
     '</div>';
   document.getElementById('panel-foot').innerHTML=
-    '<button class="btn-ci" onclick="selesaiBersih(\''+c.id+'\')">✅ Sudah dibersihkan — Siap pakai</button>'+
+    '<button class="btn-ci" onclick="selesaiBersih(\''+c.id+'\')">✅ Sudah dibersihkan - Siap pakai</button>'+
     '<button class="btn-cancel" onclick="showEmpty()">Tutup</button>';
 }
 
@@ -2388,8 +2443,8 @@ function selesaiBersih(id){
   cleaning=cleaning.filter(c=>String(c.id)!==String(id));
   save();
   selected=null;
-  renderGrid();
   showEmpty();
+  renderGrid();
   showToast('Kamar siap pakai! ✅',false);
 }
 
@@ -2405,7 +2460,7 @@ function doCheckout(id){
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
   // Tambah ke cleaning list
-  cleaning.push({id:Date.now(),loc:occ.loc,kamar:occ.kamar,namaKode:occ.namaKode||getNama(occ.loc,occ.kamar),waktu:nowStr()});
+  cleaning.push({id:Date.now(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()});
   save();selected=null;renderGrid();showEmpty();
   showToast('🧹 Kamar perlu dibersihkan dulu!',true);
 }
@@ -2586,12 +2641,12 @@ function updateShiftPreview(){
   const pte=tarif.ptEnd||'00:00';
   const p1=document.getElementById('shift-preview');
   const p2=document.getElementById('pt-preview');
-  if(p1) p1.textContent='Shift 1: '+s1s+' – '+s1e+' | Shift 2: '+s1e+' – '+s1s+' (besok)';
-  if(p2) p2.textContent='Part Time: '+pts+' – '+(pte==='00:00'?'00:00 (tengah malam)':pte);
+  if(p1) p1.textContent='Shift 1: '+s1s+' - '+s1e+' | Shift 2: '+s1e+' - '+s1s+' (besok)';
+  if(p2) p2.textContent='Part Time: '+pts+' - '+(pte==='00:00'?'00:00 (tengah malam)':pte);
 }
 
 function timeToHourMin(t){
-  // "08:00" → {h:8, m:0}
+  // "08:00" -> {h:8, m:0}
   const [h,m]=(t||'00:00').split(':').map(Number);
   return {h,m};
 }
@@ -2605,10 +2660,10 @@ function isInShift(masukDate, startStr, endStr){
   const startMin=sh*60+sm;
   const endMin=eh*60+em;
   if(startMin<=endMin){
-    // Normal shift (e.g. 08:00–20:00)
+    // Normal shift (e.g. 08:00-20:00)
     return masukMin>=startMin&&masukMin<endMin;
   } else {
-    // Overnight shift (e.g. 20:00–08:00)
+    // Overnight shift (e.g. 20:00-08:00)
     return masukMin>=startMin||masukMin<endMin;
   }
 }
@@ -2746,11 +2801,11 @@ function autoDetectSurcharge(){
     el.dataset.active='1';
     el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e67e22;background:#fff8f0;font-size:12px;font-weight:600;color:#e67e22;margin-bottom:10px;display:flex;align-items:center;gap:6px';
     const info=isLibur?'🔴 Libur Nasional':(hariIdx===6?'📅 Sabtu':'📅 Minggu');
-    label.innerHTML=info+' &nbsp;—&nbsp; <b>+Rp '+tambahW.toLocaleString('id-ID')+'</b> otomatis ✓';
+    label.innerHTML=info+' &nbsp;-&nbsp; <b>+Rp '+tambahW.toLocaleString('id-ID')+'</b> otomatis ✓';
   } else {
     el.dataset.active='0';
     el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #BFDBFE;background:#F8FBFF;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px';
-    label.textContent=hariNama+' — Hari biasa';
+    label.textContent=hariNama+' - Hari biasa';
   }
 
   // Rebuild dropdown durasi dengan/tanpa surcharge
@@ -2760,7 +2815,7 @@ function autoDetectSurcharge(){
     const sel=document.getElementById('ci-durasi');
     if(sel){
       const curVal=sel.value;
-      sel.innerHTML='<option value="">— pilih durasi —</option>'+opts.map(o=>'<option value="'+o.j+'">'+o.label+' — Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+'<option value="custom">✏️ Custom (pilih tanggal keluar)</option>';
+      sel.innerHTML='<option value="">- pilih durasi -</option>'+opts.map(o=>'<option value="'+o.j+'">'+o.label+' - Rp '+o.harga.toLocaleString('id-ID')+'</option>').join('')+'<option value="custom">✏️ Custom (pilih tanggal keluar)</option>';
       if(curVal) sel.value=curVal;
     }
   }
@@ -2813,6 +2868,10 @@ function saveTarif(){
   const nonac=document.getElementById('set-tambah-jam-nonac')?.value;
   tarif.tambahJamAC=ac?parseFloat(ac):0;
   tarif.tambahJamNonAC=nonac?parseFloat(nonac):0;
+  const acwe=document.getElementById('set-tambah-jam-ac-we')?.value;
+  const nonacwe=document.getElementById('set-tambah-jam-nonac-we')?.value;
+  tarif.tambahJamACWE=acwe?parseFloat(acwe):0;
+  tarif.tambahJamNonACWE=nonacwe?parseFloat(nonacwe):0;
   save();
   const t=document.getElementById('tarif-ok');if(t){t.style.display='';setTimeout(()=>t.style.display='none',2500);}
 }
@@ -2954,7 +3013,7 @@ function renderDashboard(){
           '<div style="font-size:11px;color:#94A3B8">'+(keluar?keluar.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-')+'</div>'+
         '</div>'+
       '</div>';
-    }).join('');;
+    }).join('');
   }
 }
 
@@ -3000,7 +3059,7 @@ function renderStatusKamar(){
 function renderTransaksi(filtered, judulTgl){
   const el=document.getElementById('lap-trx-body');
   if(!el)return;
-  document.getElementById('lap-trx-title').textContent='Detail transaksi — '+judulTgl;
+  document.getElementById('lap-trx-title').textContent='Detail transaksi - '+judulTgl;
   if(!filtered.length){el.innerHTML='<div style="color:#aaa;font-size:13px;padding:12px 0;text-align:center">Tidak ada transaksi</div>';return;}
   el.innerHTML=filtered.map(h=>{
     const masuk=h.masuk?strToDate(h.masuk).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';
@@ -3009,7 +3068,7 @@ function renderTransaksi(filtered, judulTgl){
       '<div>'+
         '<div style="font-weight:700;font-size:13px">'+getNama(h.loc,h.kamar)+'</div>'+
         '<div style="font-size:11px;color:#888">'+LOKASI[h.loc]?.nama+' · '+h.nama+' · '+h.karya+'</div>'+
-        '<div style="font-size:11px;color:#888">'+masuk+' → '+keluar+' ('+h.durasisewa+'j)</div>'+
+        '<div style="font-size:11px;color:#888">'+masuk+' -> '+keluar+' ('+h.durasisewa+'j)</div>'+
       '</div>'+
       '<div style="text-align:right">'+
         '<div style="font-weight:700;color:#3B6D11">Rp '+Math.round(h.total).toLocaleString('id-ID')+'</div>'+
@@ -3056,7 +3115,7 @@ function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
     if(!arr.length) return '-';
     const dates=arr.map(h=>strToDate(h.masuk||h.keluarAktual));
     const mn=new Date(Math.min(...dates)), mx=new Date(Math.max(...dates));
-    return mn.toDateString()===mx.toDateString()?fmtD(mn):fmtD(mn)+' – '+fmtD(mx);
+    return mn.toDateString()===mx.toDateString()?fmtD(mn):fmtD(mn)+' - '+fmtD(mx);
   }
 
   function shiftCard(label, color, bgColor, arr, keuArr, jamInfo){
@@ -3119,9 +3178,9 @@ function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
     '<div style="font-size:11px;color:#94A3B8">📅 '+allDates+' · '+filtered.length+' selesai'+(jumlahAktif?' &nbsp;·&nbsp; <span style="color:#FCD34D;font-weight:700">'+jumlahAktif+' aktif</span>':'')+'</div>'+
   '</div>';
 
-  html+=shiftCard('Shift 1','#16A34A','#F0FDF4',s1,keuS1,s1s+'–'+s1e);
-  html+=shiftCard('Shift 2','#2563EB','#EFF6FF',s2,keuS2,s1e+'–'+s1s);
-  html+=shiftCard('Part Time','#7C3AED','#F5F3FF',pt,keuPt,pts+'–'+pte);
+  html+=shiftCard('Shift 1','#16A34A','#F0FDF4',s1,keuS1,s1s+'-'+s1e);
+  html+=shiftCard('Shift 2','#2563EB','#EFF6FF',s2,keuS2,s1e+'-'+s1s);
+  html+=shiftCard('Part Time','#7C3AED','#F5F3FF',pt,keuPt,pts+'-'+pte);
 
   if(!filtered.length){
     html='<div style="text-align:center;padding:2rem;color:#94A3B8;font-size:13px">Belum ada data transaksi</div>';
@@ -3142,7 +3201,7 @@ function renderLaporan(){
   const todayStr=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
   const hr=now.getHours();
 
-  // Filter berdasarkan JAM MASUK — pakai jam shift custom dari pengaturan
+  // Filter berdasarkan JAM MASUK - pakai jam shift custom dari pengaturan
   const s1s=tarif.shift1Start||'08:00';
   const s1e=tarif.shift1End||'20:00';
   const pts=tarif.ptStart||'12:00';
@@ -3173,7 +3232,7 @@ function renderLaporan(){
       const d=getMasukDate(h);
       return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
     });
-    judulTgl='Shift 1 ('+s1s+'–'+s1e+') — '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Shift 1 ('+s1s+'-'+s1e+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='shift2-today'){
     // Shift 2: jam masuk 20:00-07:59
     // Cakup hari ini (masuk malam ini) + kemarin (masuk malam kemarin, lintas tengah malam)
@@ -3186,7 +3245,7 @@ function renderLaporan(){
       const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
       return isHariIni||isKemarin;
     });
-    judulTgl='Shift 2 ('+s1e+'–'+s1s+') — '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Shift 2 ('+s1e+'-'+s1s+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='pt-today'){
     // Part Time hari ini: transaksi oleh Part Time dalam jam Part Time
     const kemarin=new Date(now);kemarin.setDate(now.getDate()-1);
@@ -3200,7 +3259,7 @@ function renderLaporan(){
       const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
       return isHariIni||isKemarin;
     });
-    judulTgl='Part Time ('+pts+'–'+pte+') — '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Part Time ('+pts+'-'+pte+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='all-month'){
     const pad2=n=>String(n).padStart(2,'0');
     filtered=history.filter(h=>{
@@ -3214,7 +3273,7 @@ function renderLaporan(){
     const sampai=document.getElementById('lap-sampai')?.value;
     if(!dari||!sampai){
       document.getElementById('lap-trx-title').textContent='Pilih rentang tanggal';
-      document.getElementById('lap-sum').innerHTML='<div style="color:#aaa;font-size:13px;padding:8px 0">Pilih tanggal dari–sampai di atas</div>';
+      document.getElementById('lap-sum').innerHTML='<div style="color:#aaa;font-size:13px;padding:8px 0">Pilih tanggal dari-sampai di atas</div>';
       document.getElementById('lap-trx-body').innerHTML='';
       document.getElementById('lap-keu-body').innerHTML='';
       return;
@@ -3226,7 +3285,7 @@ function renderLaporan(){
       const d=getMasukDate(h);
       return d>=dariD&&d<=sampaiD;
     });
-    judulTgl=dariD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' — '+sampaiD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    judulTgl=dariD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' - '+sampaiD.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   } else if(lapShiftMode==='otomatis'){
     // Ambil semua history, render breakdown per shift khusus
     filtered=history.filter(h=>h.keluarAktual);
@@ -3260,7 +3319,7 @@ function renderLaporan(){
       const fmtDate=d=>d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
       const rangeStr=minDate.toDateString()===maxDate.toDateString()?
         fmtDate(minDate):
-        fmtDate(minDate)+' – '+fmtDate(maxDate);
+        fmtDate(minDate)+' - '+fmtDate(maxDate);
       drText.textContent=rangeStr+' · '+filtered.length+' transaksi';
       drEl.style.display='flex';
     } else {
@@ -3311,7 +3370,7 @@ function renderLaporan(){
   const totalMasukKeu=filteredKeu.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+k.nominal,0);
   const saldoBersih=total+totalMasukKeu-totalKeluar;
 
-  document.getElementById('lap-trx-title').textContent='Laporan — '+judulTgl;
+  document.getElementById('lap-trx-title').textContent='Laporan - '+judulTgl;
   if(lapShiftMode!=='otomatis'){
     document.getElementById('lap-sum').innerHTML=
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:4px">'+
@@ -3442,16 +3501,29 @@ function renderLaporan(){
     else{tbody.innerHTML=filtered.map(h=>{
       const masukStr=strToDate(h.masuk).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
       const keluarStr=h.keluarAktual?strToDate(h.keluarAktual).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
-      const bayar=h.metodeBayar==='cash'?'<span style="background:#EAF3DE;color:#27500A;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">Cash</span>':'<span style="background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">Transfer</span>';
-      return '<div style="border:1px solid #eee;border-radius:10px;padding:10px 12px;margin-bottom:8px">'+
+      let bayarBadge='';
+      if(h.metodeBayar==='cash'){
+        bayarBadge='<span style="background:#EAF3DE;color:#27500A;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">💵 Cash</span>';
+      } else if(h.metodeBayar==='transfer'){
+        bayarBadge='<span style="background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">📱 Transfer · '+(h.karya||'')+'</span>';
+      } else if(h.metodeBayar==='split'){
+        bayarBadge='<span style="background:#F5F3FF;color:#5B21B6;padding:1px 7px;border-radius:20px;font-size:11px;font-weight:600">✂️ Split: 💵'+Math.round(h.cashBayar||0).toLocaleString('id-ID')+' + 📱'+Math.round(h.transferBayar||0).toLocaleString('id-ID')+'</span>';
+      }
+      return '<div style="border:1px solid #BFDBFE;border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
-          '<span style="font-weight:700;font-size:13px">'+h.nama+'</span>'+
-          '<span style="font-weight:700;color:#3B6D11;font-size:14px">Rp '+Math.round(h.total||0).toLocaleString('id-ID')+'</span>'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-weight:700;font-size:13px">Lok.'+h.loc+' · '+(h.namaKode||h.kamar)+'</span>'+
+            '<span style="font-size:11px;background:#EFF6FF;color:#1D4ED8;padding:1px 6px;border-radius:20px;font-weight:600">'+(h.tipe==='ac'?'AC':'Non-AC')+'</span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-weight:800;color:#16A34A;font-size:14px">Rp '+Math.round(h.total||0).toLocaleString('id-ID')+'</span>'+
+            '<button onclick="hapusTrxLap(\''+h.id+'\')" style="border:none;background:#FEF2F2;color:#DC2626;cursor:pointer;font-size:12px;padding:2px 8px;border-radius:6px;font-weight:700">✕</button>'+
+          '</div>'+
         '</div>'+
-        '<div style="font-size:11px;color:#888;margin-bottom:4px">Lok.'+h.loc+' · '+(h.namaKode||h.kamar)+' · '+(h.tipe==='ac'?'AC':'Non-AC')+' · '+(h.karya||'—')+'</div>'+
-        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888">'+
-          '<span>'+masukStr+' → '+keluarStr+'</span>'+
-          '<span>'+(h.durasi?h.durasi.toFixed(1)+'j &nbsp;':'')+bayar+'</span>'+
+        '<div style="font-size:11px;color:#7C3AED;font-weight:600;margin-bottom:3px">👤 '+( h.karya||'-')+'</div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#94A3B8">'+
+          '<span>'+masukStr+' -> '+keluarStr+'</span>'+
+          '<span>'+(h.durasi?h.durasi.toFixed(1)+'j &nbsp;':'')+bayarBadge+'</span>'+
         '</div>'+
       '</div>';
     }).join('');}
@@ -3604,6 +3676,15 @@ function tambahKeuanganLap(){
   renderLaporan();
 }
 
+function hapusTrxLap(id){
+  const idx=history.findIndex(h=>String(h.id)===String(id));
+  if(idx<0){showToast('Transaksi tidak ditemukan!');return;}
+  history.splice(idx,1);
+  save();
+  renderLaporan();
+  showToast('Transaksi dihapus!',false);
+}
+
 function hapusKeuanganLap(id){
   
   keuangan=keuangan.filter(k=>String(k.id)!==String(id));
@@ -3628,7 +3709,7 @@ function loadDelKaryaList(){
   history.forEach(h=>{if(h.karya) names.add(h.karya);});
   keuangan.forEach(k=>{if(k.karya) names.add(k.karya);});
   const cur=sel.value;
-  sel.innerHTML='<option value="">— pilih karyawan —</option>'+
+  sel.innerHTML='<option value="">- pilih karyawan -</option>'+
     [...names].sort().map(n=>'<option value="'+n+'">'+(n||'(tanpa nama)')+'</option>').join('');
   if(cur) sel.value=cur;
   // Reset preview
