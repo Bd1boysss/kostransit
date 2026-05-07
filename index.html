@@ -1164,7 +1164,12 @@ function renderHistoryK(){
   ].sort((a,b)=>b.time-a.time);
 
   const totalTrx=myHistory.reduce((s,h)=>s+(h.total||0),0);
+  const totalAktif=myActive.reduce((s,a)=>s+(a.total||0),0);
   const totalKeluar=myKeu.filter(k=>k.jenis==='keluar').reduce((s,k)=>s+(k.nominal||0),0);
+  const totalMasukManual=myKeu.filter(k=>k.jenis==='masuk').reduce((s,k)=>s+(k.nominal||0),0);
+  const totalPemasukan=totalTrx+totalMasukManual; // aktif tidak masuk dulu
+  const finalDibawa=totalPemasukan-totalKeluar;
+
   if(totalEl){
     totalEl.innerHTML='<span style="color:#16A34A;font-weight:700">Rp '+totalTrx.toLocaleString('id-ID')+'</span>'+
       (totalKeluar?' &nbsp;·&nbsp; <span style="color:#DC2626">-Rp '+totalKeluar.toLocaleString('id-ID')+'</span>':'')+
@@ -1172,6 +1177,26 @@ function renderHistoryK(){
   }
 
   if(!all.length&&!allActive.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Belum ada history</div>';return;}
+
+  // Card ringkasan keuangan
+  const summaryHtml='<div style="background:linear-gradient(135deg,#0F172A,#1E3A5F);border-radius:14px;padding:14px;margin-bottom:12px;color:#fff">'+
+    '<div style="font-size:11px;color:#94A3B8;font-weight:600;margin-bottom:8px;text-transform:uppercase">💰 Ringkasan Keuangan</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+      '<div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:10px">'+
+        '<div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:3px">Pemasukan</div>'+
+        '<div style="font-size:15px;font-weight:800;color:#4ADE80">Rp '+totalPemasukan.toLocaleString('id-ID')+'</div>'+
+        (myActive.length?'<div style="font-size:10px;color:#FCD34D;margin-top:2px">+'+totalAktif.toLocaleString('id-ID')+' belum checkout</div>':'')+
+      '</div>'+
+      '<div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:10px">'+
+        '<div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:3px">Pengeluaran</div>'+
+        '<div style="font-size:15px;font-weight:800;color:#F87171">Rp '+totalKeluar.toLocaleString('id-ID')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="background:'+(finalDibawa>=0?'rgba(74,222,128,0.15)':'rgba(248,113,113,0.15)')+';border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center">'+
+      '<span style="font-size:13px;font-weight:700;color:#fff">💵 Uang dibawa pulang</span>'+
+      '<span style="font-size:18px;font-weight:900;color:'+(finalDibawa>=0?'#4ADE80':'#F87171')+'">Rp '+finalDibawa.toLocaleString('id-ID')+'</span>'+
+    '</div>'+
+  '</div>';
 
   // Tampilkan semua kamar aktif di atas (semua karyawan)
   let activeHtml='';
@@ -1194,7 +1219,7 @@ function renderHistoryK(){
       }).join('')+
     '</div>';
   }
-  el.innerHTML=activeHtml+all.map(item=>{
+  el.innerHTML=summaryHtml+activeHtml+all.map(item=>{
     if(item.type==='aktif'){
       const a=item.data;
       const masukD=strToDate(a.masuk);
@@ -2459,9 +2484,14 @@ function doCheckout(id){
   const keluarAktual=occ.keluar||nowStr();
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
-  // Tambah ke cleaning list
-  cleaning.push({id:Date.now(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()});
-  save();selected=null;renderGrid();showEmpty();
+  // Tambah ke cleaning list DULU sebelum save dan render
+  const cleanObj={id:Date.now(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
+  cleaning.push(cleanObj);
+  save();
+  selected=null;
+  // Render dulu baru showEmpty supaya kamar biru tampil
+  renderGrid();
+  showCleaning(cleanObj);
   showToast('🧹 Kamar perlu dibersihkan dulu!',true);
 }
 
