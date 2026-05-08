@@ -853,6 +853,10 @@ function initFirebaseListeners(){
 
 function fbRef(path){return db.ref('kostransit/'+path);}
 
+function uniqueId(){
+  return Date.now()+'_'+Math.random().toString(36).substr(2,6);
+}
+
 function save(){
   if(!db)return;
   // Convert arrays to objects for Firebase
@@ -1528,7 +1532,7 @@ function tambahPengeluaranK(){
   if(!ket||!nominal){showToast('Isi keterangan dan nominal!');return;}
   const now=new Date();const pad=n=>String(n).padStart(2,'0');
   const tgl=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
-  keuangan.unshift({id:Date.now(),jenis:'keluar',ket,nominal,tgl,karya:curKarya});
+  keuangan.unshift({id:uniqueId(),jenis:'keluar',ket,nominal,tgl,karya:curKarya});
   saveKeuangan();
   document.getElementById('pk-ket').value='';
   document.getElementById('pk-nominal').value='';
@@ -1542,7 +1546,7 @@ function tambahPemasukanK(){
   if(!ket||!nominal){showToast('Isi keterangan dan nominal!');return;}
   const now=new Date();const pad=n=>String(n).padStart(2,'0');
   const tgl=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
-  keuangan.unshift({id:Date.now(),jenis:'masuk',ket,nominal,tgl,karya:curKarya});
+  keuangan.unshift({id:uniqueId(),jenis:'masuk',ket,nominal,tgl,karya:curKarya});
   saveKeuangan();
   document.getElementById('pm-ket').value='';
   document.getElementById('pm-nominal').value='';
@@ -2238,7 +2242,7 @@ function doCheckin(n,tipe){
   const karyaLabel=curJabatan==='parttime'?curKarya+' (Part Time)':curKarya;
   const payData={metodeBayar,total};
   if(metodeBayar==='split'){payData.cashBayar=cashBayar;payData.transferBayar=transferBayar;}
-  active.push({id:Date.now(),loc:curLoc,kamar:n,namaKode:getNama(curLoc,n),tipe,nama:'Tamu',karya:karyaLabel,masuk,keluar,durasisewa:durasi,tarif:harga,...payData});
+  active.push({id:uniqueId(),loc:curLoc,kamar:n,namaKode:getNama(curLoc,n),tipe,nama:'Tamu',karya:karyaLabel,masuk,keluar,durasisewa:durasi,tarif:harga,...payData});
   ciPay='';
   stopJamMasukClock();
   save();selected=null;renderGrid();showEmpty();
@@ -2485,7 +2489,7 @@ function doCheckout(id){
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
   // Tambah ke cleaning list DULU sebelum save dan render
-  const cleanObj={id:Date.now(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
+  const cleanObj={id:uniqueId(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
   cleaning.push(cleanObj);
   save();
   selected=null;
