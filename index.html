@@ -12,20 +12,6 @@
 <meta name="description" content="Sistem Kasir Kos Transit">
 <title>Kos Transit — Sistem Kasir</title>
 
-E html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Kos Transit">
-<meta name="application-name" content="Kos Transit">
-<meta name="theme-color" content="#1a1a1a">
-<meta name="description" content="Sistem Kasir Kos Transit">
-<title>Kos Transit — Sistem Kasir</title>
-
 <!-- PWA Manifest inline -->
 
 
@@ -1007,7 +993,7 @@ function checkPin(){
 }
 
 function logout(){
-  try{sessionStorage.removeItem('ks_state');}catch(e){}
+  try{localStorage.removeItem('ks_state');}catch(e){}
   curKarya=''; curJabatan='karyawan'; curLokGrp=''; pinBuf=''; updateDots();
   document.getElementById('pin-err').textContent='';
   document.getElementById('login-nama').value='';
@@ -1038,15 +1024,15 @@ function showScreen(s){
     if(lapBtn)lapBtn.classList.add('active');
   }
   try{
-    if(s==='karya') sessionStorage.setItem('ks_state', JSON.stringify({screen:'karya',karya:curKarya,loc:curLoc,lokGrp:curLokGrp,jabatan:curJabatan}));
-    else if(s==='owner') sessionStorage.setItem('ks_state', JSON.stringify({screen:'owner'}));
-    else sessionStorage.removeItem('ks_state');
+    if(s==='karya') localStorage.setItem('ks_state', JSON.stringify({screen:'karya',karya:curKarya,loc:curLoc,lokGrp:curLokGrp,jabatan:curJabatan}));
+    else if(s==='owner') localStorage.setItem('ks_state', JSON.stringify({screen:'owner'}));
+    else localStorage.removeItem('ks_state');
   }catch(e){}
 }
 
 function restoreSession(){
   try{
-    const saved=sessionStorage.getItem('ks_state');
+    const saved=localStorage.getItem('ks_state');
     if(!saved)return;
     const st=JSON.parse(saved);
     if(st.screen==='karya'&&st.karya){
@@ -1061,6 +1047,7 @@ function restoreSession(){
       renderGrid();
     } else if(st.screen==='owner'){
       showScreen('owner');
+      // Render setelah fbReady - data sudah pasti ada karena restoreSession dipanggil dari dalam listener
       renderDashboard();
       renderLaporan();
     }
@@ -2488,15 +2475,16 @@ function doCheckout(id){
   const keluarAktual=occ.keluar||nowStr();
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
-  // Tambah ke cleaning list DULU sebelum save dan render
+  // Tambah ke cleaning list SEBELUM save agar Firebase punya data cleaning terbaru
   const cleanObj={id:uniqueId(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
   cleaning.push(cleanObj);
-  save();
   selected=null;
-  // Render dulu baru showEmpty supaya kamar biru tampil
+  // Render dulu dari state lokal (tanpa tunggu Firebase) agar langsung terlihat biru
   renderGrid();
   showCleaning(cleanObj);
   showToast('🧹 Kamar perlu dibersihkan dulu!',true);
+  // Simpan ke Firebase setelah render supaya listener tidak override cleaning kita
+  save();
 }
 
 
@@ -3004,6 +2992,7 @@ function setLapMode(m){
 }
 
 function renderDashboard(){
+  if(!fbReady) return;
   const el=document.getElementById('o-sum');
   if(!el)return;
   const now=new Date();
@@ -3225,6 +3214,8 @@ function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
 }
 
 function renderLaporan(){
+  // Guard: jangan render kalau data Firebase belum siap
+  if(!fbReady) return;
   // Restore section-card visibility (mungkin disembunyikan mode otomatis)
   document.querySelectorAll('#lap-result .section-card').forEach(el=>el.style.display='');
   let filtered=[];
