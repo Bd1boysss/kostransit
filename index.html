@@ -790,7 +790,7 @@ function initFirebaseListeners(){
     if(tarif.customNonAC){Object.entries(tarif.customNonAC).forEach(([j,h])=>{if(h)TARIF_NONAC[j]=h;});}
     if(tarif.customLok4){Object.entries(tarif.customLok4).forEach(([j,h])=>{if(h)TARIF_AC_LOK4[j]=h;});}
     active=Object.values(d.active||{});
-    history=Object.values(d.history||{}).sort((a,b)=>b.id-a.id);
+    history=Object.values(d.history||{}).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
     cleaning=Object.values(d.cleaning||{});
     namaKamar=d.namaKamar||{};
     // Load LOKASI dari Firebase jika ada perubahan
@@ -799,11 +799,11 @@ function initFirebaseListeners(){
         LOKASI[loc]={nama:data.nama||'Lokasi '+loc, ac:data.ac||[], nonac:data.nonac||[]};
       });
     }
-    keuangan=Object.values(d.keuangan||{}).sort((a,b)=>b.id-a.id);
+    keuangan=Object.values(d.keuangan||{}).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
     gajiData=d.gajiData||{};
-    gajiHistory=Object.values(d.gajiHistory||{}).sort((a,b)=>b.id-a.id);
+    gajiHistory=Object.values(d.gajiHistory||{}).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
     karyawanManual=d.karyawanManual||[];
-    liburData=Object.values(d.liburData||{}).sort((a,b)=>b.id-a.id);
+    liburData=Object.values(d.liburData||{}).sort((a,b)=>String(b.id).localeCompare(String(a.id)));
     fbReady=true;
     updateDropdownLabels();
     showSyncStatus('Tersimpan ✓',true);
@@ -821,7 +821,9 @@ function initFirebaseListeners(){
         // Jika ada kamar dipilih, refresh panel-nya
         if(selected){
           const stillActive=active.find(a=>String(a.loc)===String(selected.loc)&&String(a.kamar)===String(selected.kamar));
+          const stillCleaning=cleaning.find(c=>String(c.loc)===String(selected.loc)&&String(c.kamar)===String(selected.kamar));
           if(stillActive) showCheckout(stillActive);
+          else if(stillCleaning) showCleaning(stillCleaning);
           else showEmpty();
         }
       }
@@ -1496,7 +1498,7 @@ function renderHistoryOtomatis(myHistory, myKeu, s1s, s1e, pts, pte){
           '<div style="font-size:11px;color:#94A3B8">'+keluarList.length+' catatan</div>'+
         '</div>'+
       '</div>'+
-      [...keluarList,...masukList].sort((a,b)=>b.id-a.id).slice(0,10).map(k=>{
+      [...keluarList,...masukList].sort((a,b)=>String(b.id).localeCompare(String(a.id))).slice(0,10).map(k=>{
         const isMasuk=k.jenis==='masuk';
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #F1F5F9">'+
           '<div>'+
@@ -2261,9 +2263,9 @@ function showCheckout(occ){
     '</div>';
   document.getElementById('panel-foot').style.display='';
   document.getElementById('panel-foot').innerHTML=
-    '<button class="btn-co" onclick="doCheckout('+occ.id+')">Selesai & bebaskan kamar</button>'+
-    '<button onclick="showPerpanjang('+occ.id+')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:transparent;color:#1a1a1a;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">+ Tambah jam</button>'+
-    '<button onclick="batalOrder('+occ.id+')" style="width:100%;padding:9px;border-radius:10px;border:1px solid #f5b7b1;background:transparent;color:#c0392b;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">Batalkan order</button>'+
+    '<button class="btn-co" onclick="doCheckout(\''+occ.id+'\')">Selesai & bebaskan kamar</button>'+
+    '<button onclick="showPerpanjang(\''+occ.id+'\')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:transparent;color:#1a1a1a;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">+ Tambah jam</button>'+
+    '<button onclick="batalOrder(\''+occ.id+'\')" style="width:100%;padding:9px;border-radius:10px;border:1px solid #f5b7b1;background:transparent;color:#c0392b;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">Batalkan order</button>'+
     '<button class="btn-cancel" onclick="cancelAction()">Batal</button>';
   if(!sudahLewat){
     const timerInt=setInterval(()=>{
@@ -2456,12 +2458,15 @@ function showCleaning(c){
 }
 
 function selesaiBersih(id){
+  // Hapus dari cleaning berdasarkan id
   cleaning=cleaning.filter(c=>String(c.id)!==String(id));
-  save();
   selected=null;
+  // Render dulu dari state lokal
   showEmpty();
   renderGrid();
   showToast('Kamar siap pakai! ✅',false);
+  // Baru simpan ke Firebase
+  save();
 }
 
 function doCheckout(id){
@@ -2475,15 +2480,19 @@ function doCheckout(id){
   const keluarAktual=occ.keluar||nowStr();
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
-  // Tambah ke cleaning list SEBELUM save agar Firebase punya data cleaning terbaru
-  const cleanObj={id:uniqueId(),loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
+  // Pakai ID stabil berbasis lokasi+kamar supaya tidak bentrok saat Firebase sync
+  const cleanId='clean_'+String(occ.loc)+'_'+String(occ.kamar);
+  const cleanObj={id:cleanId,loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
+  // Hapus cleaning lama untuk kamar ini jika ada
+  cleaning=cleaning.filter(c=>!(String(c.loc)===String(occ.loc)&&String(c.kamar)===String(occ.kamar)));
   cleaning.push(cleanObj);
-  selected=null;
-  // Render dulu dari state lokal (tanpa tunggu Firebase) agar langsung terlihat biru
+  // Simpan selected ke kamar cleaning supaya Firebase listener tahu panel mana yang aktif
+  selected={loc:occ.loc,kamar:occ.kamar,tipe:occ.tipe||'ac'};
+  // Render dari state lokal agar kamar langsung biru
   renderGrid();
   showCleaning(cleanObj);
   showToast('🧹 Kamar perlu dibersihkan dulu!',true);
-  // Simpan ke Firebase setelah render supaya listener tidak override cleaning kita
+  // Simpan ke Firebase
   save();
 }
 
@@ -3571,7 +3580,7 @@ function renderLaporan(){
         (k.jenis==='masuk'?'<span style="background:#EAF3DE;color:#27500A;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600">Masuk</span>':
         '<span style="background:#FCEBEB;color:#791F1F;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600">Keluar</span>')+
         '<span style="font-weight:700;color:'+(k.jenis==='masuk'?'#3B6D11':'#A32D2D')+'">Rp '+k.nominal.toLocaleString('id-ID')+'</span>'+
-        '<button onclick="hapusKeuanganLap('+k.id+')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>'+
+        '<button onclick="hapusKeuanganLap(\''+k.id+'\')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>'+
       '</div>'+
       '</div>'
     ).join('');}
