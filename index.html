@@ -814,17 +814,21 @@ function initFirebaseListeners(){
       restoreSession();
     }
 
-    // Re-render semua view yang aktif
-    requestAnimationFrame(()=>{
+    // Debounce render agar tidak mental-mental saat banyak update masuk
+    if(window._fbRenderTimer)clearTimeout(window._fbRenderTimer);
+    window._fbRenderTimer=setTimeout(()=>{
       if(document.getElementById('screen-karya')?.classList.contains('active')){
         renderGrid();
+        // Refresh pengeluaran/pemasukan karyawan jika sedang terbuka
+        if(document.getElementById('pk-body')&&document.getElementById('k-pengeluaran-k')?.classList.contains('active')) renderPengeluaranK();
+        if(document.getElementById('pm-body')&&document.getElementById('k-pemasukan-k')?.classList.contains('active')) renderPemasukanK();
         // Jika ada kamar dipilih, refresh panel-nya
         if(selected){
           const stillActive=active.find(a=>String(a.loc)===String(selected.loc)&&String(a.kamar)===String(selected.kamar));
           const stillCleaning=cleaning.find(c=>String(c.loc)===String(selected.loc)&&String(c.kamar)===String(selected.kamar));
           if(stillActive) showCheckout(stillActive);
           else if(stillCleaning) showCleaning(stillCleaning);
-          else showEmpty();
+          // Kalau tidak ada lagi, biarkan panel yang sedang tampil (jangan paksa showEmpty)
         }
       }
       if(document.getElementById('screen-owner')?.classList.contains('active')){
@@ -832,7 +836,7 @@ function initFirebaseListeners(){
         if(document.getElementById('o-laporan')?.classList.contains('active')) renderLaporan();
         if(document.getElementById('o-status')?.classList.contains('active')) renderStatusKamar();
       }
-    });
+    },300);
   },err=>{
     showSyncStatus('Gagal terhubung!',false);
     console.error(err);
@@ -849,7 +853,7 @@ function save(){
   if(!db)return;
   // Convert arrays to objects for Firebase
   const activeObj={};
-  active.forEach(a=>activeObj[a.id]=a);
+  active.forEach(a=>activeObj[a.id]={...a,loc:String(a.loc),kamar:String(a.kamar)});
   const historyObj={};
   history.forEach(h=>historyObj[h.id]=h);
   const keuanganObj={};
@@ -860,7 +864,7 @@ function save(){
   liburData.forEach(l=>liburObj[l.id]=l);
 
   const cleaningObj={};
-  cleaning.forEach(c=>cleaningObj[c.id]=c);
+  cleaning.forEach(c=>cleaningObj[c.id]={...c,loc:String(c.loc),kamar:String(c.kamar)});
 
   db.ref('kostransit').update({
     pin:ownerPin,
@@ -1039,7 +1043,7 @@ function restoreSession(){
     const st=JSON.parse(saved);
     if(st.screen==='karya'&&st.karya){
       curKarya=st.karya;
-      curLoc=st.loc||1;
+      curLoc=parseInt(st.loc)||1;
       curLokGrp=st.lokGrp||'123';
       curJabatan=st.jabatan||'karyawan';
       const badgeText=curJabatan==='parttime'?curKarya+' (Part Time)':curKarya;
@@ -1757,7 +1761,7 @@ function renderGrid(){
   const loc=LOKASI[curLoc];
   const rooms=[...loc.ac.map(n=>({n,tipe:'ac'})),...loc.nonac.map(n=>({n,tipe:'nonac'}))];
   document.getElementById('kamar-grid').innerHTML=rooms.map(r=>{
-    const occ=active.find(a=>a.loc==curLoc&&a.kamar==r.n);
+    const occ=active.find(a=>String(a.loc)===String(curLoc)&&String(a.kamar)===String(r.n));
     const isClean=cleaning.find(c=>String(c.loc)===String(curLoc)&&String(c.kamar)===String(r.n));
     const isSel=selected&&selected.loc==curLoc&&selected.kamar==r.n;
     const now2=new Date();
@@ -1780,7 +1784,7 @@ function renderGrid(){
 }
 
 function selectKamar(n,tipe){
-  const occ=active.find(a=>a.loc==curLoc&&a.kamar==n);
+  const occ=active.find(a=>String(a.loc)===String(curLoc)&&String(a.kamar)===String(n));
   const isClean=cleaning.find(c=>String(c.loc)===String(curLoc)&&String(c.kamar)===String(n));
   selected={loc:curLoc,kamar:n,tipe};
   renderGrid();
@@ -3795,7 +3799,7 @@ function hapusDataKarya(){
 }
 
 function resetActiveData(){
-  
+  if(!confirm('⚠️ Hapus semua tamu yang sedang aktif?\nTidak bisa dibatalkan!'))return;
   active=[];
   save();
   renderGrid();
@@ -3804,7 +3808,7 @@ function resetActiveData(){
 }
 
 function clearAllData(){
-  
+  if(!confirm('⚠️ HAPUS SEMUA data transaksi, tamu aktif, dan keuangan?\nTidak bisa dibatalkan!'))return;
   history=[];
   active=[];
   keuangan=[];
@@ -3814,7 +3818,7 @@ function clearAllData(){
 }
 
 function clearHistory(){
-  
+  if(!confirm('⚠️ Hapus semua history transaksi?\nTidak bisa dibatalkan!'))return;
   history=[];save();renderTransaksi();
 }
 
@@ -3825,10 +3829,15 @@ setInterval(()=>{
   if(document.getElementById('screen-karya')?.classList.contains('active')){
     renderGrid();
   }
-},30000);
+},60000);
 
 // Auto-checkout when time expires
+// Delay 15 detik setelah load agar Firebase sempat load data dulu
+let autoCheckoutReady=false;
+setTimeout(()=>{autoCheckoutReady=true;},15000);
 setInterval(()=>{
+  // Jangan jalan sebelum Firebase siap dan delay awal selesai
+  if(!fbReady||!autoCheckoutReady)return;
   const now=new Date();
   const expired=active.filter(a=>a.keluar&&strToDate(a.keluar)<=now);
   if(expired.length>0){
