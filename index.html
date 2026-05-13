@@ -1995,10 +1995,12 @@ function hitungHargaCustom(tipe, loc, kamar, totalJam, masukDate){
         // Cek apakah hari ini weekend/libur
         let weSc = 0;
         if(curTime){
-          const hari = curTime.getDay();
+          // Pakai tanggal operasional (ganti hari jam 06:00)
+          const opCurTime=getOperationalDate(curTime);
+          const hari = opCurTime.getDay();
           const pad = n=>String(n).padStart(2,'0');
-          const tglStr = curTime.getFullYear()+'-'+pad(curTime.getMonth()+1)+'-'+pad(curTime.getDate());
-          if(hari===0||hari===6||getLiburSet(curTime.getFullYear()).has(tglStr)){
+          const tglStr = opCurTime.getFullYear()+'-'+pad(opCurTime.getMonth()+1)+'-'+pad(opCurTime.getDate());
+          if(hari===0||hari===6||getLiburSet(opCurTime.getFullYear()).has(tglStr)){
             weSc = tambahW;
           }
         }
@@ -2019,10 +2021,11 @@ function hitungHargaCustom(tipe, loc, kamar, totalJam, masukDate){
       const kamarSc = kamar ? getKamarSurcharge(loc, kamar, minD) : 0;
       let weSc = 0;
       if(curTime){
-        const hari=curTime.getDay();
+        const opCurTime2=getOperationalDate(curTime);
+        const hari=opCurTime2.getDay();
         const pad=n=>String(n).padStart(2,'0');
-        const tglStr=curTime.getFullYear()+'-'+pad(curTime.getMonth()+1)+'-'+pad(curTime.getDate());
-        if(hari===0||hari===6||getLiburSet(curTime.getFullYear()).has(tglStr)) weSc=tambahW;
+        const tglStr=opCurTime2.getFullYear()+'-'+pad(opCurTime2.getMonth()+1)+'-'+pad(opCurTime2.getDate());
+        if(hari===0||hari===6||getLiburSet(opCurTime2.getFullYear()).has(tglStr)) weSc=tambahW;
       }
       const hargaBlok=baseHarga+kamarSc+weSc;
       totalHarga+=hargaBlok;
@@ -2797,10 +2800,12 @@ const LIBUR_NASIONAL=new Set([...( LIBUR_FALLBACK['2025']||[]),...(LIBUR_FALLBAC
 
 function isWeekendOrHoliday(date){
   const d=date instanceof Date?date:new Date(date);
-  const hari=d.getDay();
+  // Ganti hari mulai jam 06:00 - sebelum jam 6 pagi dianggap masih hari sebelumnya
+  const opD=getOperationalDate(d);
+  const hari=opD.getDay();
   const pad=n=>String(n).padStart(2,'0');
-  const tglStr=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-  return hari===0||hari===6||getLiburSet(d.getFullYear()).has(tglStr);
+  const tglStr=opD.getFullYear()+'-'+pad(opD.getMonth()+1)+'-'+pad(opD.getDate());
+  return hari===0||hari===6||getLiburSet(opD.getFullYear()).has(tglStr);
 }
 
 function autoDetectSurcharge(){
@@ -2822,11 +2827,13 @@ function autoDetectSurcharge(){
     masukDate=new Date();
   }
 
-  const hariIdx=masukDate.getDay(); // 0=Minggu,6=Sabtu
+  // Pakai tanggal operasional (ganti hari jam 06:00)
+  const opMasuk=getOperationalDate(masukDate);
+  const hariIdx=opMasuk.getDay(); // 0=Minggu,6=Sabtu
   const hariNama=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][hariIdx];
-  const y=masukDate.getFullYear();
-  const mo=String(masukDate.getMonth()+1).padStart(2,'0');
-  const dd=String(masukDate.getDate()).padStart(2,'0');
+  const y=opMasuk.getFullYear();
+  const mo=String(opMasuk.getMonth()+1).padStart(2,'0');
+  const dd=String(opMasuk.getDate()).padStart(2,'0');
   const tglStr=y+'-'+mo+'-'+dd;
 
   const isWeekend=hariIdx===0||hariIdx===6;
