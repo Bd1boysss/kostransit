@@ -12,6 +12,20 @@
 <meta name="description" content="Sistem Kasir Kos Transit">
 <title>Kos Transit — Sistem Kasir</title>
 
+E html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kos Transit">
+<meta name="application-name" content="Kos Transit">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="description" content="Sistem Kasir Kos Transit">
+<title>Kos Transit — Sistem Kasir</title>
+
 <!-- PWA Manifest inline -->
 
 
@@ -814,21 +828,18 @@ function initFirebaseListeners(){
       restoreSession();
     }
 
-    // Debounce render agar tidak mental-mental saat banyak update masuk
+    // Debounce render agar tidak mental-mental
     if(window._fbRenderTimer)clearTimeout(window._fbRenderTimer);
     window._fbRenderTimer=setTimeout(()=>{
       if(document.getElementById('screen-karya')?.classList.contains('active')){
         renderGrid();
-        // Refresh pengeluaran/pemasukan karyawan jika sedang terbuka
         if(document.getElementById('pk-body')&&document.getElementById('k-pengeluaran-k')?.classList.contains('active')) renderPengeluaranK();
         if(document.getElementById('pm-body')&&document.getElementById('k-pemasukan-k')?.classList.contains('active')) renderPemasukanK();
-        // Jika ada kamar dipilih, refresh panel-nya
         if(selected){
           const stillActive=active.find(a=>String(a.loc)===String(selected.loc)&&String(a.kamar)===String(selected.kamar));
           const stillCleaning=cleaning.find(c=>String(c.loc)===String(selected.loc)&&String(c.kamar)===String(selected.kamar));
           if(stillActive) showCheckout(stillActive);
           else if(stillCleaning) showCleaning(stillCleaning);
-          // Kalau tidak ada lagi, biarkan panel yang sedang tampil (jangan paksa showEmpty)
         }
       }
       if(document.getElementById('screen-owner')?.classList.contains('active')){
@@ -1053,7 +1064,6 @@ function restoreSession(){
       renderGrid();
     } else if(st.screen==='owner'){
       showScreen('owner');
-      // Render setelah fbReady - data sudah pasti ada karena restoreSession dipanggil dari dalam listener
       renderDashboard();
       renderLaporan();
     }
@@ -1106,9 +1116,11 @@ function renderHistoryK(){
   if(hkFilter==='today'){
     myHistory=myHistory.filter(h=>{
       const d=strToDate(h.masuk||h.keluarAktual);
-      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+      return isSameOperationalDay(d, now);
     });
-    myKeu=myKeu.filter(k=>k.tgl===todayStr);
+    const opNowHk=getOperationalDate(now);
+    const opStrHk=opNowHk.getFullYear()+'-'+pad(opNowHk.getMonth()+1).toString().padStart(2,'0')+'-'+opNowHk.getDate().toString().padStart(2,'0');
+    myKeu=myKeu.filter(k=>k.tgl===opStrHk);
   } else if(hkFilter==='shift'){
     const isPT=curJabatan==='parttime';
     const shiftStart=isPT?pts:s1s;
@@ -2462,15 +2474,12 @@ function showCleaning(c){
 }
 
 function selesaiBersih(id){
-  // Hapus dari cleaning berdasarkan id
   cleaning=cleaning.filter(c=>String(c.id)!==String(id));
+  save();
   selected=null;
-  // Render dulu dari state lokal
   showEmpty();
   renderGrid();
   showToast('Kamar siap pakai! ✅',false);
-  // Baru simpan ke Firebase
-  save();
 }
 
 function doCheckout(id){
@@ -2484,19 +2493,14 @@ function doCheckout(id){
   const keluarAktual=occ.keluar||nowStr();
   history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
-  // Pakai ID stabil berbasis lokasi+kamar supaya tidak bentrok saat Firebase sync
   const cleanId='clean_'+String(occ.loc)+'_'+String(occ.kamar);
   const cleanObj={id:cleanId,loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
-  // Hapus cleaning lama untuk kamar ini jika ada
   cleaning=cleaning.filter(c=>!(String(c.loc)===String(occ.loc)&&String(c.kamar)===String(occ.kamar)));
   cleaning.push(cleanObj);
-  // Simpan selected ke kamar cleaning supaya Firebase listener tahu panel mana yang aktif
   selected={loc:occ.loc,kamar:occ.kamar,tipe:occ.tipe||'ac'};
-  // Render dari state lokal agar kamar langsung biru
   renderGrid();
   showCleaning(cleanObj);
   showToast('🧹 Kamar perlu dibersihkan dulu!',true);
-  // Simpan ke Firebase
   save();
 }
 
@@ -3004,6 +3008,28 @@ function setLapMode(m){
   renderLaporan();
 }
 
+
+// ===== TANGGAL OPERASIONAL (hari baru mulai jam 06:00) =====
+// Jika jam sekarang < 06:00, dianggap masih hari operasional kemarin
+function getOperationalDate(date){
+  const d = date || new Date();
+  if(d.getHours() < 6){
+    // Sebelum jam 6 pagi = masih hari operasional sebelumnya
+    const kemarin = new Date(d);
+    kemarin.setDate(kemarin.getDate() - 1);
+    return kemarin;
+  }
+  return d;
+}
+
+function isSameOperationalDay(date1, date2){
+  const op1 = getOperationalDate(date1);
+  const op2 = getOperationalDate(date2);
+  return op1.getFullYear()===op2.getFullYear() &&
+         op1.getMonth()===op2.getMonth() &&
+         op1.getDate()===op2.getDate();
+}
+
 function renderDashboard(){
   if(!fbReady) return;
   const el=document.getElementById('o-sum');
@@ -3227,7 +3253,6 @@ function renderOtomatis(filtered, s1s, s1e, pts, pte, isPartTime, getShift){
 }
 
 function renderLaporan(){
-  // Guard: jangan render kalau data Firebase belum siap
   if(!fbReady) return;
   // Restore section-card visibility (mungkin disembunyikan mode otomatis)
   document.querySelectorAll('#lap-result .section-card').forEach(el=>el.style.display='');
@@ -3255,49 +3280,51 @@ function renderLaporan(){
   const getMasukDate=h=>strToDate(h.masuk||h.keluarAktual);
 
   if(lapShiftMode==='all-today'){
+    const opNow=getOperationalDate(now);
     filtered=history.filter(h=>{
       if(!h.keluarAktual)return false;
       const d=getMasukDate(h);
-      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+      return isSameOperationalDay(d, now);
     });
-    judulTgl=now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl=opNow.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='shift1-today'){
-    // Shift 1 hari ini: karyawan masuk jam Shift 1, tanggal hari ini
+    // Shift 1 hari ini: karyawan masuk jam Shift 1, tanggal operasional hari ini
+    const opNow=getOperationalDate(now);
     filtered=history.filter(h=>{
       if(!h.keluarAktual)return false;
       const sh=getShift(h);
       if(sh!==1)return false;
       const d=getMasukDate(h);
-      return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
+      return isSameOperationalDay(d, now);
     });
-    judulTgl='Shift 1 ('+s1s+'-'+s1e+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Shift 1 ('+s1s+'-'+s1e+') - '+opNow.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='shift2-today'){
-    // Shift 2: jam masuk 20:00-07:59
-    // Cakup hari ini (masuk malam ini) + kemarin (masuk malam kemarin, lintas tengah malam)
-    const kemarin=new Date(now);kemarin.setDate(now.getDate()-1);
+    // Shift 2: cakup hari operasional ini (termasuk dini hari sebelum jam 06:00)
+    const opNow=getOperationalDate(now);
+    const kemarin=new Date(opNow);kemarin.setDate(opNow.getDate()-1);
     filtered=history.filter(h=>{
       if(!h.keluarAktual)return false;
       if(getShift(h)!==2)return false;
       const d=getMasukDate(h);
-      const isHariIni=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
-      const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
-      return isHariIni||isKemarin;
+      const isOpHariIni=isSameOperationalDay(d, now);
+      const isOpKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
+      return isOpHariIni||isOpKemarin;
     });
-    judulTgl='Shift 2 ('+s1e+'-'+s1s+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Shift 2 ('+s1e+'-'+s1s+') - '+opNow.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='pt-today'){
-    // Part Time hari ini: transaksi oleh Part Time dalam jam Part Time
-    const kemarin=new Date(now);kemarin.setDate(now.getDate()-1);
+    // Part Time hari operasional ini
+    const opNow=getOperationalDate(now);
+    const kemarin=new Date(opNow);kemarin.setDate(opNow.getDate()-1);
     filtered=history.filter(h=>{
       if(!h.keluarAktual)return false;
       if(!isPartTime(h))return false;
       const sh=getShift(h);
       if(sh!=='pt')return false;
       const d=getMasukDate(h);
-      const isHariIni=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
-      const isKemarin=d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate();
-      return isHariIni||isKemarin;
+      return isSameOperationalDay(d, now)||
+             (d.getFullYear()===kemarin.getFullYear()&&d.getMonth()===kemarin.getMonth()&&d.getDate()===kemarin.getDate());
     });
-    judulTgl='Part Time ('+pts+'-'+pte+') - '+now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    judulTgl='Part Time ('+pts+'-'+pte+') - '+opNow.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   } else if(lapShiftMode==='all-month'){
     const pad2=n=>String(n).padStart(2,'0');
     filtered=history.filter(h=>{
@@ -3385,14 +3412,16 @@ function renderLaporan(){
     const pad2=n=>String(n).padStart(2,'0');
     const todayStr2=now2.getFullYear()+'-'+pad2(now2.getMonth()+1)+'-'+pad2(now2.getDate());
     const hr2=now2.getHours();
-    if(lapShiftMode==='all-today') return k.tgl===todayStr2;
+    if(lapShiftMode==='all-today'){const opNow2=getOperationalDate(now2);const opStr2=opNow2.getFullYear()+'-'+pad2(opNow2.getMonth()+1)+'-'+pad2(opNow2.getDate());return k.tgl===opStr2;}
     if(lapShiftMode==='shift1-today') return k.tgl===todayStr2;
     if(lapShiftMode==='pt-today') return k.tgl===todayStr2;
     if(lapShiftMode==='shift2-today'){
-      if(hr2>=20) return k.tgl===todayStr2;
-      const kemarin2=new Date(now2);kemarin2.setDate(now2.getDate()-1);
+      // Pakai tanggal operasional (hari baru mulai jam 06:00)
+      const opNow2=getOperationalDate(now2);
+      const opStr2=opNow2.getFullYear()+'-'+pad2(opNow2.getMonth()+1)+'-'+pad2(opNow2.getDate());
+      const kemarin2=new Date(opNow2);kemarin2.setDate(opNow2.getDate()-1);
       const kemStr2=kemarin2.getFullYear()+'-'+pad2(kemarin2.getMonth()+1)+'-'+pad2(kemarin2.getDate());
-      return k.tgl===kemStr2||k.tgl===todayStr2;
+      return k.tgl===opStr2||k.tgl===kemStr2;
     }
     if(lapShiftMode==='all-month') return k.tgl.slice(0,7)===todayStr2.slice(0,7);
     if(lapShiftMode==='custom'){
@@ -3584,7 +3613,7 @@ function renderLaporan(){
         (k.jenis==='masuk'?'<span style="background:#EAF3DE;color:#27500A;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600">Masuk</span>':
         '<span style="background:#FCEBEB;color:#791F1F;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:600">Keluar</span>')+
         '<span style="font-weight:700;color:'+(k.jenis==='masuk'?'#3B6D11':'#A32D2D')+'">Rp '+k.nominal.toLocaleString('id-ID')+'</span>'+
-        '<button onclick="hapusKeuanganLap(\''+k.id+'\')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>'+
+        '<button onclick="hapusKeuanganLap('+k.id+')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>'+
       '</div>'+
       '</div>'
     ).join('');}
@@ -3612,7 +3641,10 @@ function downloadLaporan(){
 
   // Apply filter shift/mode
   if(lapShiftMode==='all-today'){
-    const d0=strToDate(todayStr+'T00:00:00'),d1=strToDate(todayStr+'T23:59:59');
+    // Hari operasional: 06:00 hari ini sampai 05:59 besok
+    const opNowDl=getOperationalDate(now);
+    const d0=new Date(opNowDl);d0.setHours(6,0,0,0);
+    const d1=new Date(opNowDl);d1.setDate(d1.getDate()+1);d1.setHours(5,59,59,999);
     filtered=filtered.filter(h=>{const d=getMasukDl(h);return d>=d0&&d<=d1;});
   } else if(lapShiftMode==='shift1-today'){
     filtered=filtered.filter(h=>{
@@ -3829,14 +3861,13 @@ setInterval(()=>{
   if(document.getElementById('screen-karya')?.classList.contains('active')){
     renderGrid();
   }
-},60000);
+},30000);
 
 // Auto-checkout when time expires
-// Delay 15 detik setelah load agar Firebase sempat load data dulu
+// Auto-checkout guard: delay 15 detik agar Firebase sempat load dulu
 let autoCheckoutReady=false;
 setTimeout(()=>{autoCheckoutReady=true;},15000);
 setInterval(()=>{
-  // Jangan jalan sebelum Firebase siap dan delay awal selesai
   if(!fbReady||!autoCheckoutReady)return;
   const now=new Date();
   const expired=active.filter(a=>a.keluar&&strToDate(a.keluar)<=now);
