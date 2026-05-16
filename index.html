@@ -502,6 +502,33 @@ input,select,textarea{font-size:16px!important;}
         </div>
       </div>
     </div>
+
+    <div id="o-harian" class="o-section" style="display:none">
+      <div class="section-card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <div>
+            <div class="section-title" style="margin:0">History Harian</div>
+            <div style="font-size:12px;color:#64748B;margin-top:4px">Ringkasan check-in, checkout, kamar aktif, pemasukan, dan pengeluaran per hari operasional.</div>
+          </div>
+          <button onclick="printHistoryHarian()" style="padding:7px 14px;border-radius:8px;border:1px solid #BFDBFE;background:#fff;color:#1D4ED8;font-size:12px;font-weight:700;cursor:pointer">Cetak / PDF</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <input type="date" id="hist-hari-tgl" onchange="renderHistoryHarian()" style="width:100%;padding:10px 12px;border:1.5px solid #BFDBFE;border-radius:10px;background:#fff;outline:none;font-size:14px">
+          <select id="hist-hari-lok" onchange="renderHistoryHarian()" style="width:100%;padding:10px 12px;border:1.5px solid #BFDBFE;border-radius:10px;background:#fff;outline:none;font-size:14px">
+            <option value="all">Semua Lokasi</option>
+            <option value="123">Lok. 1, 2, 3</option>
+            <option value="4">Lok. 4</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="geserHistoryHari(-1)" style="padding:7px 12px;border-radius:8px;border:1px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">← Kemarin</button>
+          <button onclick="setHistoryHariToday()" style="padding:7px 12px;border-radius:8px;border:none;background:#0F172A;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Hari ini</button>
+          <button onclick="geserHistoryHari(1)" style="padding:7px 12px;border-radius:8px;border:1px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">Besok →</button>
+        </div>
+      </div>
+      <div id="hist-hari-result"></div>
+    </div>
+
     <div id="o-status" class="o-section" style="display:none">
       <div id="o-status-grid"></div>
     </div>
@@ -845,6 +872,7 @@ function initFirebaseListeners(){
       if(document.getElementById('screen-owner')?.classList.contains('active')){
         renderDashboard();
         if(document.getElementById('o-laporan')?.classList.contains('active')) renderLaporan();
+        if(document.getElementById('o-harian')?.classList.contains('active')) renderHistoryHarian();
         if(document.getElementById('o-status')?.classList.contains('active')) renderStatusKamar();
       }
     },300);
@@ -1631,6 +1659,10 @@ function oNavTab(t,el){
     if(lapSampai&&!lapSampai.value)lapSampai.value=today;
 
     renderLaporan();
+  }
+  if(t==='harian'){
+    initHistoryHarianDefault();
+    renderHistoryHarian();
   }
   if(t==='status')renderStatusKamar();
   if(t==='pengaturan'){
@@ -3084,6 +3116,145 @@ function renderDashboard(){
       '</div>';
     }).join('');
   }
+}
+
+
+function dateKeyLocal(d){
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+function getDayWindowFromKey(key){
+  const [y,m,d]=key.split('-').map(Number);
+  const start=new Date(y,m-1,d,6,0,0,0);
+  const end=new Date(start.getTime()+24*3600000);
+  return {start,end};
+}
+
+function initHistoryHarianDefault(){
+  const el=document.getElementById('hist-hari-tgl');
+  if(el&&!el.value) el.value=dateKeyLocal(getOperationalDate(new Date()));
+}
+
+function setHistoryHariToday(){
+  const el=document.getElementById('hist-hari-tgl');
+  if(el){el.value=dateKeyLocal(getOperationalDate(new Date()));renderHistoryHarian();}
+}
+
+function geserHistoryHari(delta){
+  const el=document.getElementById('hist-hari-tgl');
+  if(!el)return;
+  if(!el.value) el.value=dateKeyLocal(getOperationalDate(new Date()));
+  const [y,m,d]=el.value.split('-').map(Number);
+  const dt=new Date(y,m-1,d+delta,12,0,0,0);
+  el.value=dateKeyLocal(dt);
+  renderHistoryHarian();
+}
+
+function matchLokHarian(item, lokFilter){
+  if(lokFilter==='all')return true;
+  const loc=String(item.loc);
+  if(lokFilter==='123')return loc==='1'||loc==='2'||loc==='3';
+  if(lokFilter==='4')return loc==='4';
+  return true;
+}
+
+function renderHistoryHarian(){
+  const root=document.getElementById('hist-hari-result');
+  if(!root)return;
+  initHistoryHarianDefault();
+  const tgl=document.getElementById('hist-hari-tgl')?.value||dateKeyLocal(getOperationalDate(new Date()));
+  const lokFilter=document.getElementById('hist-hari-lok')?.value||'all';
+  const {start,end}=getDayWindowFromKey(tgl);
+  const fmtRp=n=>'Rp '+Math.round(n||0).toLocaleString('id-ID');
+  const fmtJam=d=>d?d.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+  const inRange=d=>d>=start&&d<end;
+
+  const semuaTrx=[
+    ...history.map(h=>({...h,_asal:'history'})),
+    ...active.map(a=>({...a,_asal:'active'}))
+  ].filter(x=>matchLokHarian(x,lokFilter));
+
+  const checkins=semuaTrx.filter(x=>x.masuk&&inRange(strToDate(x.masuk)));
+  const checkouts=history.filter(x=>matchLokHarian(x,lokFilter)&&x.keluarAktual&&inRange(strToDate(x.keluarAktual)));
+  const aktifDiHari=semuaTrx.filter(x=>{
+    const masuk=x.masuk?strToDate(x.masuk):null;
+    const keluar=x.keluarAktual?strToDate(x.keluarAktual):(x.keluar?strToDate(x.keluar):new Date(8640000000000000));
+    return masuk&&masuk<end&&keluar>start;
+  });
+  const aktifSekarang=active.filter(x=>matchLokHarian(x,lokFilter));
+  const masukManual=keuangan.filter(k=>k.jenis==='masuk'&&k.tgl===tgl);
+  const keluarManual=keuangan.filter(k=>k.jenis==='keluar'&&k.tgl===tgl);
+
+  const pendapatanCheckin=checkins.reduce((s,x)=>s+(x.total||0),0);
+  const pendapatanManual=masukManual.reduce((s,x)=>s+(x.nominal||0),0);
+  const pengeluaran=keluarManual.reduce((s,x)=>s+(x.nominal||0),0);
+  const saldo=pendapatanCheckin+pendapatanManual-pengeluaran;
+  const cash=checkins.reduce((s,x)=>s+(x.metodeBayar==='cash'?(x.total||0):(x.metodeBayar==='split'?(x.cashBayar||0):0)),0);
+  const transfer=checkins.reduce((s,x)=>s+(x.metodeBayar==='transfer'?(x.total||0):(x.metodeBayar==='split'?(x.transferBayar||0):0)),0);
+
+  const judul=new Date(tgl+'T12:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const lokasiLabel=lokFilter==='all'?'Semua lokasi':(lokFilter==='123'?'Lokasi 1, 2, 3':'Lokasi 4');
+
+  function card(label,val,sub,color){
+    return '<div class="scard"><div class="scard-label">'+label+'</div><div class="scard-val" style="color:'+color+'">'+val+'</div><div style="font-size:11px;color:#94A3B8;margin-top:4px;font-weight:600">'+sub+'</div></div>';
+  }
+
+  function trxCard(x, mode){
+    const masuk=x.masuk?strToDate(x.masuk):null;
+    const keluar=x.keluarAktual?strToDate(x.keluarAktual):(x.keluar?strToDate(x.keluar):null);
+    const aktif=x._asal==='active';
+    const bayar=x.metodeBayar==='split'?'Split':(x.metodeBayar||'-');
+    return '<div style="border:1px solid '+(aktif?'#FCD34D':'#BFDBFE')+';border-radius:12px;padding:10px 12px;margin-bottom:8px;background:'+(aktif?'#FFFBEB':'#fff')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">'+
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:14px;font-weight:800;color:#0F172A">'+getNama(x.loc,x.kamar)+'</span>'+ 
+        '<span style="font-size:10px;background:'+(aktif?'#F59E0B':'#EFF6FF')+';color:'+(aktif?'#fff':'#1D4ED8')+';padding:1px 7px;border-radius:20px;font-weight:800">'+(aktif?'AKTIF':'SELESAI')+'</span></div>'+ 
+        '<span style="font-size:13px;font-weight:900;color:#16A34A">'+fmtRp(x.total||0)+'</span>'+ 
+      '</div>'+ 
+      '<div style="font-size:11px;color:#64748B;margin-bottom:3px">'+(LOKASI[x.loc]?.nama||('Lokasi '+x.loc))+' · '+(x.tipe||'').toUpperCase()+' · '+bayar+'</div>'+ 
+      '<div style="font-size:11px;color:#94A3B8">Masuk: '+fmtJam(masuk)+' &nbsp;|&nbsp; Keluar: '+fmtJam(keluar)+'</div>'+ 
+      '<div style="font-size:11px;color:#7C3AED;font-weight:700;margin-top:3px">Karyawan: '+(x.karya||'-')+'</div>'+ 
+    '</div>';
+  }
+
+  const ringkasan='<div class="section-card" style="margin-bottom:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div><div style="font-size:15px;font-weight:800;color:#0F172A">'+judul+'</div><div style="font-size:12px;color:#64748B;margin-top:3px">'+lokasiLabel+' · Hari operasional 06:00 sampai 06:00</div></div>'+ 
+      '<div style="font-size:12px;color:#64748B;font-weight:700;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:5px 10px">'+tgl+'</div>'+ 
+    '</div>'+ 
+    '<div class="sum-grid" style="margin-bottom:0">'+
+      card('Pemasukan',fmtRp(pendapatanCheckin+pendapatanManual),'Check-in + pemasukan manual','#16A34A')+
+      card('Pengeluaran',fmtRp(pengeluaran),keluarManual.length+' catatan','#DC2626')+
+      card('Saldo',fmtRp(saldo),'Pemasukan - pengeluaran',saldo>=0?'#2563EB':'#DC2626')+
+      card('Check-in',checkins.length+' trx','Cash '+fmtRp(cash)+' · Transfer '+fmtRp(transfer),'#7C3AED')+
+      card('Checkout',checkouts.length+' trx','Selesai pada hari ini','#F97316')+
+      card('Kamar aktif',aktifDiHari.length+' kamar','Aktif/pernah aktif hari ini','#0F172A')+
+    '</div></div>';
+
+  const aktifNowHtml=aktifSekarang.length?'<div class="section-card" style="margin-bottom:12px"><div class="section-title">Kamar aktif sekarang</div>'+aktifSekarang.map(x=>trxCard({...x,_asal:'active'})).join('')+'</div>':'';
+  const checkinHtml='<div class="section-card" style="margin-bottom:12px"><div class="section-title">Check-in hari ini</div>'+(checkins.length?checkins.sort((a,b)=>strToDate(b.masuk)-strToDate(a.masuk)).map(trxCard).join(''):'<div style="text-align:center;color:#aaa;padding:18px;font-size:13px">Belum ada check-in di tanggal ini</div>')+'</div>';
+  const checkoutHtml='<div class="section-card" style="margin-bottom:12px"><div class="section-title">Checkout hari ini</div>'+(checkouts.length?checkouts.sort((a,b)=>strToDate(b.keluarAktual)-strToDate(a.keluarAktual)).map(x=>trxCard({...x,_asal:'history'})).join(''):'<div style="text-align:center;color:#aaa;padding:18px;font-size:13px">Belum ada checkout di tanggal ini</div>')+'</div>';
+
+  const keuRows=[...masukManual,...keluarManual].sort((a,b)=>String(b.id).localeCompare(String(a.id)));
+  const keuHtml='<div class="section-card"><div class="section-title">Pemasukan & Pengeluaran manual</div>'+(keuRows.length?keuRows.map(k=>{
+    const masuk=k.jenis==='masuk';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #F1F5F9;padding:9px 0;gap:8px">'+
+      '<div><div style="font-size:13px;font-weight:700;color:#0F172A">'+(k.ket||'-')+'</div><div style="font-size:11px;color:#94A3B8">'+(k.karya||'-')+' · '+tgl+'</div></div>'+ 
+      '<div style="font-size:13px;font-weight:900;color:'+(masuk?'#16A34A':'#DC2626')+'">'+(masuk?'+':'-')+fmtRp(k.nominal||0)+'</div>'+ 
+    '</div>';
+  }).join(''):'<div style="text-align:center;color:#aaa;padding:18px;font-size:13px">Tidak ada catatan manual</div>')+'</div>';
+
+  root.innerHTML=ringkasan+aktifNowHtml+checkinHtml+checkoutHtml+keuHtml;
+}
+
+function printHistoryHarian(){
+  const area=document.getElementById('hist-hari-result');
+  if(!area){window.print();return;}
+  const old=document.body.innerHTML;
+  document.body.innerHTML='<div style="font-family:Arial,sans-serif;padding:18px"><h2>History Harian Kos Transit</h2>'+area.innerHTML+'</div>';
+  window.print();
+  document.body.innerHTML=old;
+  location.reload();
 }
 
 function renderStatusKamar(){
