@@ -3870,26 +3870,17 @@ setInterval(()=>{
   }
 },30000);
 
-// Auto-checkout when time expires
-// Auto-checkout guard: delay 15 detik agar Firebase sempat load dulu
-let autoCheckoutReady=false;
-setTimeout(()=>{autoCheckoutReady=true;},15000);
+// Auto-refresh tampilan kamar.
+// CATATAN PERBAIKAN:
+// Sebelumnya ada fitur auto-checkout yang menghapus data `active` saat waktu habis.
+// Akibatnya kamar yang masih terisi/expired langsung hilang dari status aktif dan terlihat hijau/kosong.
+// Sekarang kamar expired tetap berada di `active` sampai karyawan menekan tombol checkout manual.
 setInterval(()=>{
-  if(!fbReady||!autoCheckoutReady)return;
-  const now=new Date();
-  const expired=active.filter(a=>a.keluar&&strToDate(a.keluar)<=now);
-  if(expired.length>0){
-    expired.forEach(a=>{
-      history.unshift({...a,keluarAktual:a.keluar||nowStr(),durasi:a.durasisewa||0,status:'out',autoCheckout:true});
-    });
-    active=active.filter(a=>!a.keluar||strToDate(a.keluar)>now);
-    save();
-    // Re-render jika sedang di halaman yang relevan
-    if(document.getElementById('screen-karya')?.classList.contains('active'))renderGrid();
-    if(document.getElementById('screen-owner')?.classList.contains('active')){
-      if(document.getElementById('o-laporan')?.classList.contains('active')){renderDashboard();}
-      if(document.getElementById('o-status')?.classList.contains('active'))renderStatusKamar();
-    }
+  if(!fbReady)return;
+  if(document.getElementById('screen-karya')?.classList.contains('active'))renderGrid();
+  if(document.getElementById('screen-owner')?.classList.contains('active')){
+    renderDashboard();
+    if(document.getElementById('o-status')?.classList.contains('active'))renderStatusKamar();
   }
 },10000);
 
