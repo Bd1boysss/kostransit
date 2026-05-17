@@ -369,7 +369,7 @@ input,select,textarea{font-size:16px!important;}
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
             <div>
               <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Tanggal</label>
-              <input type="date" id="hk-custom-date" onchange="hkFilter='custom';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
+              <input type="date" id="hk-custom-date" onchange="hkFilter='custom';const d=document.getElementById('hk-custom-day');if(d)d.value='';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
             </div>
             <div>
               <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Bulan</label>
@@ -377,7 +377,7 @@ input,select,textarea{font-size:16px!important;}
             </div>
             <div>
               <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Hari</label>
-              <select id="hk-custom-day" onchange="hkFilter='custom';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
+              <select id="hk-custom-day" onchange="hkFilter='custom';const d=document.getElementById('hk-custom-date');if(d)d.value='';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
                 <option value="">Semua hari</option>
                 <option value="1">Senin</option>
                 <option value="2">Selasa</option>
@@ -392,7 +392,7 @@ input,select,textarea{font-size:16px!important;}
               <button onclick="resetHkCustomFilter()" style="width:100%;padding:9px 10px;border-radius:9px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">Reset</button>
             </div>
           </div>
-          <div id="hk-custom-info" style="font-size:11px;color:#64748B;margin-top:8px">Tanggal mengikuti hari operasional 06:00–05:59.</div>
+          <div id="hk-custom-info" style="font-size:11px;color:#64748B;margin-top:8px">Tanggal mengikuti hari operasional 06:00–06:00.</div>
         </div>
         <div id="hk-body"></div>
       </div>
@@ -4004,7 +4004,7 @@ function downloadLaporan(){
 
   // Apply filter shift/mode
   if(lapShiftMode==='all-today'){
-    // Hari operasional: 06:00 hari ini sampai 05:59 besok
+    // Hari operasional: 06:00 hari ini sampai 06:00 besok
     const opNowDl=getOperationalDate(now);
     const d0=new Date(opNowDl);d0.setHours(6,0,0,0);
     const d1=new Date(opNowDl);d1.setDate(d1.getDate()+1);d1.setHours(5,59,59,999);
@@ -4265,4 +4265,194 @@ setInterval(()=>{
     });
   }
 },1000);
+
+
+/* ===== PATCH V12 FINAL SAFE ===== */
+(function(){
+  const HARI=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const BULAN=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  function pad(n){return String(n).padStart(2,"0");}
+  function rp(n){return "Rp "+Math.round(n||0).toLocaleString("id-ID");}
+  function dt(v){try{if(typeof strToDate==="function")return strToDate(v);}catch(e){} return new Date(v);}
+  function op(d){const x=new Date(d||new Date()); if(x.getHours()<6)x.setDate(x.getDate()-1); return x;}
+  function key(d){const x=op(d); return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(x.getDate());}
+  function label(k){const d=new Date(k+"T12:00:00"); return HARI[d.getDay()]+", "+d.getDate()+" "+BULAN[d.getMonth()]+" "+d.getFullYear();}
+  function roomName(loc,kamar){try{if(typeof getNama==="function")return getNama(loc,kamar);}catch(e){} return String(kamar||"-");}
+  function arr(name){try{return (typeof window[name]!=="undefined"&&Array.isArray(window[name]))?window[name]:[]}catch(e){return []}}
+  function collect(k){
+    const his=(typeof history!=="undefined"&&Array.isArray(history))?history:[];
+    const act=(typeof active!=="undefined"&&Array.isArray(active))?active:[];
+    const keu=(typeof keuangan!=="undefined"&&Array.isArray(keuangan))?keuangan:[];
+    const ci=his.filter(x=>key(dt(x.masuk||x.keluarAktual))===k);
+    const co=his.filter(x=>key(dt(x.keluarAktual||x.keluar||x.masuk))===k);
+    const aktif=act.filter(x=>key(dt(x.masuk||new Date()))===k);
+    const masuk=keu.filter(x=>x.jenis==="masuk"&&key(dt((x.tgl||k)+"T12:00"))===k);
+    const keluar=keu.filter(x=>x.jenis==="keluar"&&key(dt((x.tgl||k)+"T12:00"))===k);
+    const pendapatan=ci.reduce((s,x)=>s+(x.total||0),0)+masuk.reduce((s,x)=>s+(x.nominal||0),0);
+    const pengeluaran=keluar.reduce((s,x)=>s+(x.nominal||0),0);
+    return {ci,co,aktif,masuk,keluar,pendapatan,pengeluaran,saldo:pendapatan-pengeluaran};
+  }
+  function todayLabels(){
+    const d=op(new Date());
+    const text=HARI[d.getDay()]+", "+d.getDate()+" "+BULAN[d.getMonth()]+" "+d.getFullYear();
+    document.querySelectorAll("#hk-today-date,#hh-today-date").forEach(el=>{if(el)el.textContent=text;});
+  }
+  function weekMap(){
+    const now=op(new Date());
+    const monday=new Date(now);
+    monday.setDate(now.getDate()-((now.getDay()+6)%7));
+    const names=["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu","Minggu"];
+    const map={};
+    names.forEach((n,i)=>{const d=new Date(monday); d.setDate(monday.getDate()+i); map[n]=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());});
+    return map;
+  }
+  function renderDetail(k,prefix){
+    const body=document.getElementById("hk-body");
+    if(!body)return;
+    let holder=document.getElementById("hk-auto-day-detail");
+    if(!holder){holder=document.createElement("div"); holder.id="hk-auto-day-detail"; body.appendChild(holder);}
+    const d=collect(k);
+    const by={};
+    const ensure=n=>{n=n||"Tanpa nama"; if(!by[n])by[n]={masuk:0,keluar:0,ci:0,co:0,aktif:0}; return by[n];};
+    d.ci.forEach(x=>{const r=ensure(x.karya); r.masuk+=(x.total||0); r.ci++;});
+    d.co.forEach(x=>{const r=ensure(x.karya); r.co++;});
+    d.aktif.forEach(x=>{const r=ensure(x.karya); r.aktif++;});
+    d.masuk.forEach(x=>{const r=ensure(x.karya||"Manual"); r.masuk+=(x.nominal||0);});
+    d.keluar.forEach(x=>{const r=ensure(x.karya||"Manual"); r.keluar+=(x.nominal||0);});
+    const rows=Object.entries(by).sort((a,b)=>(b[1].masuk-b[1].keluar)-(a[1].masuk-a[1].keluar));
+    const trx=[...d.ci.map(x=>({...x,_jenis:"Check-in",_time:x.masuk})),...d.co.map(x=>({...x,_jenis:"Checkout",_time:x.keluarAktual||x.keluar}))].sort((a,b)=>dt(b._time)-dt(a._time));
+    holder.innerHTML=`
+      <div style="border:2px solid #2563EB;border-radius:16px;padding:14px;margin-top:14px;background:#fff">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">
+          <div>
+            <div style="font-size:18px;font-weight:900;color:#0F172A">${prefix||"Detail"} ${label(k)}</div>
+            <div style="font-size:12px;color:#64748B;margin-top:3px">Hari operasional 06:00–06:00</div>
+          </div>
+          <div style="font-size:18px;font-weight:900;color:${d.saldo>=0?"#16A34A":"#DC2626"}">${rp(d.saldo)}</div>
+        </div>
+        <div class="sum-grid" style="margin-bottom:12px">
+          <div class="scard"><div class="scard-label">Pemasukan</div><div class="scard-val g">${rp(d.pendapatan)}</div></div>
+          <div class="scard"><div class="scard-label">Pengeluaran</div><div class="scard-val r">${rp(d.pengeluaran)}</div></div>
+          <div class="scard"><div class="scard-label">CI / CO</div><div class="scard-val b">${d.ci.length} / ${d.co.length}</div></div>
+          <div class="scard"><div class="scard-label">Aktif hari itu</div><div class="scard-val">${d.aktif.length}</div></div>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:#0F172A;margin:10px 0 8px">Uang dibawa per karyawan</div>
+        ${rows.length?rows.map(([n,v])=>{
+          const saldo=(v.masuk||0)-(v.keluar||0);
+          return `<div style="border:1px solid #BFDBFE;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#F8FBFF">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+              <div><div style="font-size:14px;font-weight:900;color:#0F172A">${n}</div>
+              <div style="font-size:11px;color:#64748B">CI ${v.ci} · CO ${v.co} · Aktif ${v.aktif} · Pengeluaran ${rp(v.keluar)}</div></div>
+              <div style="font-size:15px;font-weight:900;color:${saldo>=0?"#16A34A":"#DC2626"}">${rp(saldo)}</div>
+            </div></div>`;
+        }).join(""):`<div style="padding:14px;text-align:center;color:#94A3B8">Belum ada data karyawan</div>`}
+        <div style="font-size:14px;font-weight:900;color:#0F172A;margin:14px 0 8px">Detail transaksi</div>
+        ${trx.length?trx.map(x=>{
+          const isCI=x._jenis==="Check-in";
+          const t=dt(x._time||x.masuk||x.keluarAktual);
+          return `<div style="border:1px solid #E2E8F0;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+              <div><div style="font-size:14px;font-weight:900;color:#0F172A">${roomName(x.loc,x.kamar)} <span style="font-size:10px;background:${isCI?"#DCFCE7":"#DBEAFE"};color:${isCI?"#15803D":"#1D4ED8"};padding:2px 7px;border-radius:20px">${x._jenis}</span></div>
+              <div style="font-size:11px;color:#64748B">${t.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})} · ${x.durasisewa||x.durasi||0} jam · ${x.metodeBayar||"-"} · ${x.karya||"-"}</div></div>
+              <div style="font-size:14px;font-weight:900;color:#16A34A">${rp(x.total||0)}</div>
+            </div></div>`;
+        }).join(""):`<div style="padding:14px;text-align:center;color:#94A3B8">Belum ada transaksi</div>`}
+      </div>`;
+    setTimeout(()=>holder.scrollIntoView({behavior:"smooth",block:"start"}),50);
+  }
+  window.renderDetailHariKos=renderDetail;
+
+  window.showHkCustomPanel=function(){
+    const panel=document.getElementById("hk-custom-panel");
+    if(panel)panel.style.display="";
+    const d=op(new Date());
+    const month=document.getElementById("hk-custom-month");
+    if(month&&!month.value)month.value=d.getFullYear()+"-"+pad(d.getMonth()+1);
+  };
+
+  window.applyHkCustomFilter=function(){
+    const date=document.getElementById("hk-custom-date")?.value||"";
+    const month=document.getElementById("hk-custom-month")?.value||"";
+    const dayVal=document.getElementById("hk-custom-day")?.value||"";
+    if(typeof hkFilter!=="undefined")hkFilter="custom";
+    if(typeof renderHistoryK==="function")renderHistoryK();
+    setTimeout(()=>{
+      if(date){renderDetail(date,"Detail Kostum");return;}
+      if(dayVal!==""&&month){
+        const body=document.getElementById("hk-body");
+        if(!body)return;
+        let holder=document.getElementById("hk-auto-day-detail");
+        if(!holder){holder=document.createElement("div");holder.id="hk-auto-day-detail";body.appendChild(holder);}
+        const [y,m]=month.split("-").map(Number);
+        const end=new Date(y,m,0,12,0,0);
+        const days=[];
+        for(let d=new Date(y,m-1,1,12,0,0);d<=end;d.setDate(d.getDate()+1)){
+          if(d.getDay()===parseInt(dayVal))days.push(d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()));
+        }
+        holder.innerHTML=`
+          <div style="border:2px solid #2563EB;border-radius:16px;padding:14px;margin-top:14px;background:#fff">
+            <div style="font-size:18px;font-weight:900;color:#0F172A;margin-bottom:10px">Kostum ${HARI[parseInt(dayVal)]} · ${month}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">
+              ${days.map(k=>{const st=collect(k);return `<button type="button" data-detail-date="${k}" style="text-align:left;border:1.5px solid #BFDBFE;border-radius:12px;background:#F8FBFF;padding:10px;cursor:pointer">
+                <div style="font-size:13px;font-weight:900;color:#0F172A">${label(k)}</div>
+                <div style="font-size:15px;font-weight:900;color:#16A34A;margin-top:4px">${rp(st.pendapatan)}</div>
+                <div style="font-size:11px;color:#64748B;margin-top:2px">CI ${st.ci.length} · CO ${st.co.length} · Aktif ${st.aktif.length}</div>
+              </button>`;}).join("")}
+            </div>
+          </div>`;
+      }
+    },80);
+  };
+
+  function hardSelectLok(grp){
+    try{curLokGrp=grp;}catch(e){}
+    document.querySelectorAll('[id^="lok-btn-"]').forEach(b=>{
+      b.style.borderColor="#e0e0e0"; b.style.background="#f9f9f9"; b.style.color="#888";
+    });
+    const btn=document.getElementById("lok-btn-"+grp);
+    if(btn){btn.style.borderColor="#16A34A";btn.style.background="#EAF3DE";btn.style.color="#15803D";}
+    const err=document.getElementById("login-karya-err"); if(err)err.textContent="";
+  }
+  window.selectLokGrp=function(grp,el){hardSelectLok(grp);};
+
+  function bindAll(){
+    todayLabels();
+    const b123=document.getElementById("lok-btn-123");
+    const b4=document.getElementById("lok-btn-4");
+    if(b123&&!b123.dataset.v12){b123.dataset.v12="1";b123.type="button";b123.addEventListener("click",e=>{e.preventDefault();hardSelectLok("123");});}
+    if(b4&&!b4.dataset.v12){b4.dataset.v12="1";b4.type="button";b4.addEventListener("click",e=>{e.preventDefault();hardSelectLok("4");});}
+    const panel=document.getElementById("hk-custom-panel");
+    if(panel&&!document.getElementById("hk-custom-show-btn")){
+      const wrap=document.createElement("div");
+      wrap.style.marginTop="8px";
+      wrap.innerHTML='<button id="hk-custom-show-btn" type="button" style="width:100%;padding:10px;border-radius:10px;border:none;background:#0F172A;color:#fff;font-size:13px;font-weight:900;cursor:pointer">Tampilkan / Enter</button>';
+      panel.appendChild(wrap);
+      panel.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();window.applyHkCustomFilter();}});
+      document.getElementById("hk-custom-show-btn").addEventListener("click",window.applyHkCustomFilter);
+    }
+    const date=document.getElementById("hk-custom-date");
+    const day=document.getElementById("hk-custom-day");
+    if(date&&!date.dataset.v12){date.dataset.v12="1";date.addEventListener("change",()=>{if(day)day.value="";});}
+    if(day&&!day.dataset.v12){day.dataset.v12="1";day.addEventListener("change",()=>{if(date)date.value="";});}
+    const body=document.getElementById("hk-body");
+    if(body&&!body.dataset.v12){
+      body.dataset.v12="1";
+      body.addEventListener("click",e=>{
+        const btn=e.target.closest("[data-detail-date]");
+        if(btn){renderDetail(btn.dataset.detailDate,"Detail");return;}
+        if(typeof hkFilter==="undefined"||hkFilter!=="otomatis")return;
+        const card=e.target.closest("div");
+        if(!card)return;
+        const txt=(card.innerText||"").trim();
+        const map=weekMap();
+        const found=Object.keys(map).find(h=>txt.startsWith(h+"\n")||txt.startsWith(h+" "));
+        if(found)renderDetail(map[found],"Detail");
+      });
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindAll); else bindAll();
+  setInterval(bindAll,1000);
+  setInterval(todayLabels,60000);
+})();
+
 </script>
