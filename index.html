@@ -355,10 +355,44 @@ input,select,textarea{font-size:16px!important;}
         <!-- Filter -->
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           <button class="hk-tab active" onclick="setHkFilter('all',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #0F172A;background:#0F172A;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Saya</button>
-          <button class="hk-tab" onclick="setHkFilter('today',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:600;cursor:pointer">Hari ini</button>
+          <button class="hk-tab" onclick="setHkFilter('today',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:600;cursor:pointer;line-height:1.25;text-align:center">
+  <span style="display:block">Hari ini</span>
+  <span id="hk-today-date" style="display:block;font-size:10px;font-weight:700;opacity:.9;margin-top:2px">Minggu, 17 Mei 2026</span>
+</button>
           <button class="hk-tab" onclick="setHkFilter('shift',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:600;cursor:pointer">Shift ini</button>
           <button class="hk-tab" onclick="setHkFilter('otomatis',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:600;cursor:pointer">Otomatis</button>
           <button class="hk-tab" onclick="setHkFilter('semua',this)" style="padding:6px 12px;border-radius:8px;border:1.5px solid #7C3AED;background:#fff;color:#7C3AED;font-size:12px;font-weight:600;cursor:pointer">👥 Semua</button>
+          <button class="hk-tab" onclick="setHkFilter('custom',this);showHkCustomPanel()" style="padding:6px 12px;border-radius:8px;border:1.5px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:600;cursor:pointer">📅 Kostum</button>
+        </div>
+        <div id="hk-custom-panel" style="display:none;margin-bottom:12px;background:#F8FBFF;border:1.5px solid #BFDBFE;border-radius:12px;padding:10px">
+          <div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:8px">Filter Kostum History</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
+            <div>
+              <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Tanggal</label>
+              <input type="date" id="hk-custom-date" onchange="hkFilter='custom';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Bulan</label>
+              <input type="month" id="hk-custom-month" onchange="hkFilter='custom';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;color:#64748B;font-weight:700;margin-bottom:4px">Hari</label>
+              <select id="hk-custom-day" onchange="hkFilter='custom';renderHistoryK()" style="width:100%;padding:8px 10px;border:1.5px solid #BFDBFE;border-radius:9px;background:#fff;font-size:13px">
+                <option value="">Semua hari</option>
+                <option value="1">Senin</option>
+                <option value="2">Selasa</option>
+                <option value="3">Rabu</option>
+                <option value="4">Kamis</option>
+                <option value="5">Jumat</option>
+                <option value="6">Sabtu</option>
+                <option value="0">Minggu</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:end;gap:6px">
+              <button onclick="resetHkCustomFilter()" style="width:100%;padding:9px 10px;border-radius:9px;border:1.5px solid #E2E8F0;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">Reset</button>
+            </div>
+          </div>
+          <div id="hk-custom-info" style="font-size:11px;color:#64748B;margin-top:8px">Tanggal mengikuti hari operasional 06:00–05:59.</div>
         </div>
         <div id="hk-body"></div>
       </div>
@@ -378,6 +412,7 @@ input,select,textarea{font-size:16px!important;}
     </div>
     <div style="display:flex;padding:0 10px 8px;gap:4px;flex-wrap:wrap">
       <button class="nav-tab active" onclick="oNavTab('laporan',this)">Laporan</button>
+      <button class="nav-tab" onclick="oNavTab('harian',this)">History Harian</button>
       <button class="nav-tab" onclick="oNavTab('status',this)">Status Kamar</button>
       <button class="nav-tab" onclick="oNavTab('pengaturan',this)">Pengaturan</button>
     </div>
@@ -522,10 +557,14 @@ input,select,textarea{font-size:16px!important;}
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button onclick="geserHistoryHari(-1)" style="padding:7px 12px;border-radius:8px;border:1px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">← Kemarin</button>
-          <button onclick="setHistoryHariToday()" style="padding:7px 12px;border-radius:8px;border:none;background:#0F172A;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Hari ini</button>
+          <button onclick="setHistoryHariToday()" style="padding:7px 12px;border-radius:8px;border:none;background:#0F172A;color:#fff;font-size:12px;font-weight:700;cursor:pointer;line-height:1.25;text-align:center">
+  <span style="display:block">Hari ini</span>
+  <span id="hh-today-date" style="display:block;font-size:10px;font-weight:700;opacity:.9;margin-top:2px">Minggu, 17 Mei 2026</span>
+</button>
           <button onclick="geserHistoryHari(1)" style="padding:7px 12px;border-radius:8px;border:1px solid #BFDBFE;background:#fff;color:#64748B;font-size:12px;font-weight:700;cursor:pointer">Besok →</button>
         </div>
       </div>
+      <div id="hist-minggu-result"></div>
       <div id="hist-hari-result"></div>
     </div>
 
@@ -1112,11 +1151,61 @@ let hkFilter='all';
 
 function setHkFilter(f, el){
   hkFilter=f;
+  if(f==='custom') showHkCustomPanel(); else hideHkCustomPanel();
   document.querySelectorAll('.hk-tab').forEach(b=>{
     b.style.background='#fff';b.style.color='#64748B';b.style.borderColor='#BFDBFE';
   });
   el.style.background='#0F172A';el.style.color='#fff';el.style.borderColor='#0F172A';
   renderHistoryK();
+}
+
+
+function showHkCustomPanel(){
+  const p=document.getElementById('hk-custom-panel');
+  if(p)p.style.display='';
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const d=(typeof getOperationalDate==='function')?getOperationalDate(now):now;
+  const date=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const month=d.getFullYear()+'-'+pad(d.getMonth()+1);
+  const de=document.getElementById('hk-custom-date');
+  const me=document.getElementById('hk-custom-month');
+  if(de&&!de.value)de.value=date;
+  if(me&&!me.value)me.value=month;
+}
+function hideHkCustomPanel(){
+  const p=document.getElementById('hk-custom-panel');
+  if(p)p.style.display='none';
+}
+function resetHkCustomFilter(){
+  const d=document.getElementById('hk-custom-date');
+  const m=document.getElementById('hk-custom-month');
+  const h=document.getElementById('hk-custom-day');
+  if(d)d.value='';
+  if(m)m.value='';
+  if(h)h.value='';
+  hkFilter='custom';
+  renderHistoryK();
+}
+function hkOpDateKey(dateObj){
+  const d=(typeof getOperationalDate==='function')?getOperationalDate(dateObj):dateObj;
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function hkPassCustomDate(dateObj){
+  const de=document.getElementById('hk-custom-date');
+  const me=document.getElementById('hk-custom-month');
+  const he=document.getElementById('hk-custom-day');
+  const op=(typeof getOperationalDate==='function')?getOperationalDate(dateObj):dateObj;
+  const key=hkOpDateKey(dateObj);
+  const month=key.slice(0,7);
+  const wantDate=de&&de.value?de.value:'';
+  const wantMonth=me&&me.value?me.value:'';
+  const wantDay=he&&he.value!==''?parseInt(he.value):null;
+  if(wantDate&&key!==wantDate)return false;
+  if(wantMonth&&month!==wantMonth)return false;
+  if(wantDay!==null&&op.getDay()!==wantDay)return false;
+  return true;
 }
 
 function renderHistoryK(){
@@ -1159,6 +1248,9 @@ function renderHistoryK(){
       return sameDay&&isInShift(d,shiftStart,shiftEnd);
     });
     myKeu=myKeu.filter(k=>k.tgl===todayStr);
+  } else if(hkFilter==='custom'){
+    myHistory=myHistory.filter(h=>hkPassCustomDate(strToDate(h.masuk||h.keluarAktual)));
+    myKeu=myKeu.filter(k=>hkPassCustomDate(strToDate((k.tgl||todayStr)+'T12:00:00')));
   }
 
   if(hkFilter==='otomatis'){
@@ -1191,6 +1283,8 @@ function renderHistoryK(){
       const sameDay=d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();
       return sameDay&&isInShift(d,shiftStart,shiftEnd);
     });
+  } else if(hkFilter==='custom'){
+    myActive=myActive.filter(a=>hkPassCustomDate(strToDate(a.masuk||'')));
   }
 
   // Merge: aktif + history + keuangan, sort terbaru
@@ -1473,6 +1567,9 @@ function renderHistoryOtomatis(myHistory, myKeu, s1s, s1e, pts, pte){
     el.innerHTML='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Belum ada data</div>';
     return;
   }
+
+  // Rekap otomatis Senin-Minggu di tab Otomatis
+  html+=buildWeeklyRecapHtml(dateKeyLocal(getOperationalDate(new Date())),'all',true);
 
   // Grand total card
   html+='<div style="background:linear-gradient(135deg,#0F172A,#1E3A5F);border-radius:14px;padding:14px;margin-bottom:12px;color:#fff">'+
@@ -3159,10 +3256,98 @@ function matchLokHarian(item, lokFilter){
   return true;
 }
 
+
+function getWeekStartMondayFromKey(key){
+  const [y,m,d]=key.split('-').map(Number);
+  const dt=new Date(y,m-1,d,12,0,0,0);
+  const day=dt.getDay(); // 0 Minggu, 1 Senin
+  const diff=day===0?-6:1-day;
+  dt.setDate(dt.getDate()+diff);
+  return dateKeyLocal(dt);
+}
+
+function addDaysKey(key,delta){
+  const [y,m,d]=key.split('-').map(Number);
+  const dt=new Date(y,m-1,d+delta,12,0,0,0);
+  return dateKeyLocal(dt);
+}
+
+function getHarianStatsByKey(key,lokFilter){
+  const {start,end}=getDayWindowFromKey(key);
+  const inRange=d=>d>=start&&d<end;
+  const semuaTrx=[
+    ...history.map(h=>({...h,_asal:'history'})),
+    ...active.map(a=>({...a,_asal:'active'}))
+  ].filter(x=>matchLokHarian(x,lokFilter));
+  const checkins=semuaTrx.filter(x=>x.masuk&&inRange(strToDate(x.masuk)));
+  const checkouts=history.filter(x=>matchLokHarian(x,lokFilter)&&x.keluarAktual&&inRange(strToDate(x.keluarAktual)));
+  const aktifDiHari=semuaTrx.filter(x=>{
+    const masuk=x.masuk?strToDate(x.masuk):null;
+    const keluar=x.keluarAktual?strToDate(x.keluarAktual):(x.keluar?strToDate(x.keluar):new Date(8640000000000000));
+    return masuk&&masuk<end&&keluar>start;
+  });
+  const masukManual=keuangan.filter(k=>k.jenis==='masuk'&&k.tgl===key);
+  const keluarManual=keuangan.filter(k=>k.jenis==='keluar'&&k.tgl===key);
+  const pendapatan=checkins.reduce((s,x)=>s+(x.total||0),0)+masukManual.reduce((s,x)=>s+(x.nominal||0),0);
+  const pengeluaran=keluarManual.reduce((s,x)=>s+(x.nominal||0),0);
+  return {key,checkins,checkouts,aktifDiHari,masukManual,keluarManual,pendapatan,pengeluaran,saldo:pendapatan-pengeluaran};
+}
+
+function buildWeeklyRecapHtml(tgl,lokFilter,compact=false){
+  const fmtRp=n=>'Rp '+Math.round(n||0).toLocaleString('id-ID');
+  const startKey=getWeekStartMondayFromKey(tgl);
+  const hariNama=['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+  const stats=hariNama.map((nama,i)=>({nama,...getHarianStatsByKey(addDaysKey(startKey,i),lokFilter)}));
+  const totalMasuk=stats.reduce((s,x)=>s+x.pendapatan,0);
+  const totalKeluar=stats.reduce((s,x)=>s+x.pengeluaran,0);
+  const totalCheckin=stats.reduce((s,x)=>s+x.checkins.length,0);
+  const totalCheckout=stats.reduce((s,x)=>s+x.checkouts.length,0);
+  const best=[...stats].sort((a,b)=>b.pendapatan-a.pendapatan)[0];
+  const lokasiLabel=lokFilter==='all'?'Semua lokasi':(lokFilter==='123'?'Lokasi 1, 2, 3':'Lokasi 4');
+  const rangeLabel=new Date(startKey+'T12:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short'})+' - '+new Date(addDaysKey(startKey,6)+'T12:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  const maxPend=Math.max(1,...stats.map(x=>x.pendapatan));
+  return '<div class="section-card" style="margin-bottom:12px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div><div class="section-title" style="margin:0">Rekap Otomatis Senin–Minggu</div><div style="font-size:12px;color:#64748B;margin-top:4px">'+lokasiLabel+' · '+rangeLabel+' · hari operasional 06:00–06:00</div></div>'+ 
+      '<div style="font-size:12px;color:#1D4ED8;font-weight:800;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:20px;padding:5px 10px">Teramai: '+(best&&best.pendapatan>0?best.nama:'-')+'</div>'+ 
+    '</div>'+ 
+    '<div class="sum-grid" style="margin-bottom:12px">'+
+      '<div class="scard"><div class="scard-label">Pemasukan minggu ini</div><div class="scard-val g">'+fmtRp(totalMasuk)+'</div></div>'+ 
+      '<div class="scard"><div class="scard-label">Pengeluaran minggu ini</div><div class="scard-val r">'+fmtRp(totalKeluar)+'</div></div>'+ 
+      '<div class="scard"><div class="scard-label">Saldo minggu ini</div><div class="scard-val '+(totalMasuk-totalKeluar>=0?'b':'r')+'">'+fmtRp(totalMasuk-totalKeluar)+'</div></div>'+ 
+      '<div class="scard"><div class="scard-label">Check-in / Checkout</div><div class="scard-val" style="color:#7C3AED">'+totalCheckin+' / '+totalCheckout+'</div></div>'+ 
+    '</div>'+ 
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">'+stats.map(x=>{
+      const pct=Math.round((x.pendapatan/maxPend)*100);
+      const active=x.key===tgl;
+      return '<button onclick="pilihHistoryHari(\''+x.key+'\')" style="text-align:left;border:1.5px solid '+(active?'#2563EB':'#BFDBFE')+';background:'+(active?'#EFF6FF':'#fff')+';border-radius:12px;padding:10px;cursor:pointer;color:#0F172A">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span style="font-size:13px;font-weight:900">'+x.nama+'</span><span style="font-size:10px;color:#64748B;font-weight:700">'+x.key.slice(5)+'</span></div>'+ 
+        '<div style="font-size:15px;font-weight:900;color:#16A34A;margin-bottom:3px">'+fmtRp(x.pendapatan)+'</div>'+ 
+        '<div style="font-size:11px;color:#64748B;font-weight:700">CI '+x.checkins.length+' · CO '+x.checkouts.length+' · Aktif '+x.aktifDiHari.length+'</div>'+ 
+        '<div style="height:5px;background:#E2E8F0;border-radius:20px;overflow:hidden;margin-top:7px"><div style="height:100%;width:'+pct+'%;background:#2563EB;border-radius:20px"></div></div>'+ 
+      '</button>';
+    }).join('')+'</div>'+ 
+  '</div>';
+}
+
+function pilihHistoryHari(key){
+  const el=document.getElementById('hist-hari-tgl');
+  if(el){el.value=key;renderHistoryHarian();}
+}
+
+function renderHistoryMingguan(){
+  const root=document.getElementById('hist-minggu-result');
+  if(!root)return;
+  const tgl=document.getElementById('hist-hari-tgl')?.value||dateKeyLocal(getOperationalDate(new Date()));
+  const lokFilter=document.getElementById('hist-hari-lok')?.value||'all';
+  root.innerHTML=buildWeeklyRecapHtml(tgl,lokFilter,false);
+}
+
 function renderHistoryHarian(){
   const root=document.getElementById('hist-hari-result');
   if(!root)return;
   initHistoryHarianDefault();
+  renderHistoryMingguan();
   const tgl=document.getElementById('hist-hari-tgl')?.value||dateKeyLocal(getOperationalDate(new Date()));
   const lokFilter=document.getElementById('hist-hari-lok')?.value||'all';
   const {start,end}=getDayWindowFromKey(tgl);
