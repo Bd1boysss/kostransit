@@ -2379,10 +2379,44 @@ function doCheckin(n,tipe){
   const karyaLabel=curJabatan==='parttime'?curKarya+' (Part Time)':curKarya;
   const payData={metodeBayar,total};
   if(metodeBayar==='split'){payData.cashBayar=cashBayar;payData.transferBayar=transferBayar;}
-  active.push({id:uniqueId(),loc:curLoc,kamar:n,namaKode:getNama(curLoc,n),tipe,nama:'Tamu',karya:karyaLabel,masuk,keluar,durasisewa:durasi,tarif:harga,...payData});
+  const newOcc={id:uniqueId(),loc:curLoc,kamar:n,namaKode:getNama(curLoc,n),tipe,nama:'Tamu',karya:karyaLabel,masuk,keluar,durasisewa:durasi,tarif:harga,...payData};
+
+  // FIX: jangan sampai kamar baru input langsung dianggap selesai.
+  // Bersihkan sisa status cleaning untuk kamar yang sama, cegah data dobel,
+  // lalu kosongkan selected SEBELUM save agar listener Firebase tidak membuka panel checkout.
+  cleaning=cleaning.filter(c=>!(String(c.loc)===String(curLoc)&&String(c.kamar)===String(n)));
+  active=active.filter(a=>!(String(a.loc)===String(curLoc)&&String(a.kamar)===String(n)));
+  active.push(newOcc);
   ciPay='';
   stopJamMasukClock();
-  save();selected=null;renderGrid();showEmpty();
+  selected=null;
+  renderGrid();
+  showCheckinSuccess(newOcc);
+  save();
+}
+
+
+function showCheckinSuccess(occ){
+  stopJamMasukClock();
+  const masukD=strToDate(occ.masuk);
+  const keluarD=occ.keluar?strToDate(occ.keluar):null;
+  const masukStr=masukD.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const keluarStr=keluarD?keluarD.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+  document.getElementById('panel-title').textContent='✅ Check-in berhasil';
+  document.getElementById('panel-sub').textContent='Kamar '+getNama(occ.loc,occ.kamar)+' sekarang aktif / terisi';
+  document.getElementById('panel-body').innerHTML=
+    '<div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:14px;padding:16px;text-align:center;margin-bottom:12px">'+
+      '<div style="font-size:42px;margin-bottom:8px">✅</div>'+
+      '<div style="font-size:17px;font-weight:800;color:#15803D;margin-bottom:4px">Kamar '+getNama(occ.loc,occ.kamar)+' aktif</div>'+
+      '<div style="font-size:12px;color:#64748B">Kamar tidak akan langsung masuk selesai. Checkout harus manual.</div>'+
+    '</div>'+
+    '<div class="info-row"><span>Jam masuk</span><span>'+masukStr+'</span></div>'+
+    '<div class="info-row"><span>Jam keluar</span><span>'+keluarStr+'</span></div>'+
+    '<div class="info-row"><span>Durasi</span><span>'+(occ.durasisewa||0)+' jam</span></div>'+
+    '<div class="info-row"><span>Total</span><span>Rp '+(occ.total||0).toLocaleString('id-ID')+'</span></div>';
+  document.getElementById('panel-foot').style.display='';
+  document.getElementById('panel-foot').innerHTML=
+    '<button class="btn-cancel" onclick="cancelAction()">Tutup</button>';
 }
 
 function showCheckout(occ){
@@ -2622,8 +2656,17 @@ function doCheckout(id){
   }
   if(idx<0)return;
   const occ=active[idx];
-  const keluarAktual=occ.keluar||nowStr();
-  history.unshift({...occ,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
+
+  // FIX safety: cegah checkout otomatis / salah pencet sesaat setelah check-in.
+  const umurMs=new Date()-strToDate(occ.masuk||nowStr());
+  if(umurMs>=0 && umurMs<60000){
+    if(!confirm('Kamar ini baru saja di-check-in. Yakin mau langsung diselesaikan/checkout?')){
+      return;
+    }
+  }
+
+  const keluarAktual=nowStr();
+  history.unshift({...occ,rencanaKeluar:occ.keluar,keluarAktual,durasi:occ.durasisewa||0,status:'out'});
   active.splice(idx,1);
   const cleanId='clean_'+String(occ.loc)+'_'+String(occ.kamar);
   const cleanObj={id:cleanId,loc:String(occ.loc),kamar:String(occ.kamar),namaKode:occ.namaKode||getNama(occ.loc,occ.kamar)||'Kamar',waktu:nowStr()};
