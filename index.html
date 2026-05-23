@@ -1358,7 +1358,7 @@ function renderHistoryK(){
       const now2=new Date();
       const expired=keluarD&&keluarD<now2;
       const sisaMs=keluarD?keluarD-now2:0;
-      const sisaStr=sisaMs>0?(Math.floor(sisaMs/3600000)+'j '+Math.floor((sisaMs%3600000)/60000)+'m'):expired?'⚠ Waktu habis':'';
+      const sisaStr=sisaMs>0?(Math.floor(sisaMs/3600000)+'j '+Math.floor((sisaMs%3600000)/60000)+'m'):expired?'⚠ Lewat waktu':'';
       const tglStr=masukD.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});
       const masukStr=masukD.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
       const keluarStr=keluarD?keluarD.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';
@@ -1888,7 +1888,7 @@ function cdHtml(occ){
   let sisaStr='';
   if(keluarDate&&!cd.habis){const ms=keluarDate-now;const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);const s=Math.floor((ms%60000)/1000);sisaStr=(h>0?h+'j ':'')+m+'m '+s+'d';}
   const label=cd.habis
-    ?'<span style="color:#c0392b;font-weight:700;font-size:12px;display:block">Keluar '+(isToday?'':tglStr+' ')+'pukul '+jamStr+'</span><span style="color:#c0392b;font-size:12px;font-weight:600">⚠ Waktu habis</span>'
+    ?'<span style="color:#c0392b;font-weight:700;font-size:12px;display:block">Keluar '+(isToday?'':tglStr+' ')+'pukul '+jamStr+'</span><span style="color:#c0392b;font-size:12px;font-weight:600">⚠ Lewat waktu</span>'
     :'<span style="color:'+color+';font-weight:700;font-size:12px;display:block">Keluar '+(isToday?'':tglStr+' ')+'pukul '+jamStr+'</span><span style="color:'+color+';font-size:12px;font-weight:600">Sisa '+sisaStr+'</span>';
   return '<span class="kdur" id="cd_'+occ.loc+'_'+occ.kamar+'" style="display:block;margin-top:4px">'+
     label+
@@ -1932,13 +1932,12 @@ function renderGrid(){
 
     const ms=keluarD-now2;
     if(ms<=0){
-      return '<span class="kdur" style="font-size:11px;color:#B91C1C;font-weight:900;white-space:normal;text-align:center;line-height:1.25">Habis</span>';
+      return '<span class="kdur" style="font-size:11px;color:#B91C1C;font-weight:900;white-space:normal;text-align:center;line-height:1.25">Lewat waktu</span>';
     }
 
     const h=Math.floor(ms/3600000);
     const m=Math.floor((ms%3600000)/60000);
-    const s=Math.floor((ms%60000)/1000);
-    return '<span class="kdur" id="cd_'+occ.loc+'_'+occ.kamar+'" style="font-size:11px;color:#1D4ED8;font-weight:800;white-space:normal;text-align:center;line-height:1.25">Sisa '+(h>0?h+'j ':'')+m+'m '+s+'d</span>';
+    return '<span class="kdur" id="cd_'+occ.loc+'_'+occ.kamar+'" style="font-size:11px;color:#1D4ED8;font-weight:800;white-space:normal;text-align:center;line-height:1.25;min-width:58px;display:block">Sisa '+(h>0?h+'j ':'')+m+'m</span>';
   };
 
   grid.innerHTML=rooms.map(r=>{
@@ -2501,11 +2500,11 @@ function showCheckout(occ){
     '<div class="total-box" style="'+(belumMulai?'background:#FAEEDA':sudahLewat?'background:#FCEBEB':'background:#EAF3DE')+'">'+
       '<div class="total-label" style="color:'+(belumMulai?'#633806':sudahLewat?'#791F1F':'#27500A')+'">Sudah dibayar</div>'+
       '<div class="total-val" style="color:'+(belumMulai?'#633806':sudahLewat?'#791F1F':'#27500A')+'">Rp '+(occ.total||0).toLocaleString('id-ID')+'</div>'+
-      '<div style="font-size:11px;margin-top:3px;color:'+(belumMulai?'#633806':sudahLewat?'#791F1F':'#27500A')+'" id="co-timer">'+(belumMulai?'🕐 Belum mulai · mulai '+masukStr:sudahLewat?'⚠ Waktu sudah habis!':'Sisa waktu: ...')+'</div>'+
+      '<div style="font-size:11px;margin-top:3px;color:'+(belumMulai?'#633806':sudahLewat?'#791F1F':'#27500A')+'" id="co-timer">'+(belumMulai?'🕐 Belum mulai · mulai '+masukStr:sudahLewat?'⚠ Lewat waktu, belum checkout':'Sisa waktu: ...')+'</div>'+
     '</div>';
   document.getElementById('panel-foot').style.display='';
   document.getElementById('panel-foot').innerHTML=
-    '<button class="btn-co" onclick="doCheckout(\''+occ.id+'\')">Selesai & bebaskan kamar</button>'+
+    '<button class="btn-co" onclick="doCheckout(\''+occ.id+'\')">Checkout manual & pindahkan ke bersihkan</button>'+
     '<button onclick="showPerpanjang(\''+occ.id+'\')" style="width:100%;padding:10px;border-radius:10px;border:1px solid #e0e0e0;background:transparent;color:#1a1a1a;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">+ Tambah jam</button>'+
     '<button onclick="batalOrder(\''+occ.id+'\')" style="width:100%;padding:9px;border-radius:10px;border:1px solid #f5b7b1;background:transparent;color:#c0392b;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:6px">Batalkan order</button>'+
     '<button class="btn-cancel" onclick="cancelAction()">Batal</button>';
@@ -2520,7 +2519,7 @@ function showCheckout(occ){
         return;
       }
       const ms2=strToDate(occ.keluar)-nowT;
-      if(ms2<=0){el.textContent='⚠ Waktu sudah habis!';clearInterval(timerInt);return;}
+      if(ms2<=0){el.textContent='⚠ Lewat waktu, belum checkout';clearInterval(timerInt);return;}
       const h=Math.floor(ms2/3600000),m=Math.floor((ms2%3600000)/60000),s=Math.floor((ms2%60000)/1000);
       el.textContent='Sisa: '+(h>0?h+'j ':'')+m+'m '+s+'d';
     },1000);
@@ -3571,7 +3570,7 @@ function renderStatusKamar(){
       if(belumMulai){
         sub='Mulai '+masuk.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
       }else if(expired){
-        sub='Habis';
+        sub='Lewat waktu';
       }else if(keluar){
         const h=Math.floor(sisaMs/3600000);
         const m=Math.floor((sisaMs%3600000)/60000);
@@ -4600,18 +4599,89 @@ setInterval(()=>{
         const keluar=strToDate(a.keluar);
         const ms=keluar-now;
         if(ms<=0){
-          el.textContent='Habis';
+          el.textContent='Lewat waktu';
           el.style.color='#B91C1C';
         }else{
           const h=Math.floor(ms/3600000);
           const m=Math.floor((ms%3600000)/60000);
-          const s=Math.floor((ms%60000)/1000);
-          el.textContent='Sisa '+(h>0?h+'j ':'')+m+'m '+s+'d';
+          el.textContent='Sisa '+(h>0?h+'j ':'')+m+'m';
           el.style.color=ms<1800000?'#C2410C':'#1D4ED8';
         }
       });
     }catch(e){}
   }
-  setInterval(safeUpdateGridCountdown,1000);
+  safeUpdateGridCountdown();
+  setInterval(safeUpdateGridCountdown,60000);
+})();
+
+
+/* PATCH V19: stabilkan timer, hilangkan detik agar tampilan tidak gerak */
+(function(){
+  function normalizeTimerText(){
+    try{
+      document.querySelectorAll('.kdur').forEach(el=>{
+        const txt=(el.textContent||'').trim();
+        const m=txt.match(/^Sisa\s+(.+?)\s+\d+d$/);
+        if(m){
+          el.textContent='Sisa '+m[1];
+        }
+        el.style.minWidth='58px';
+        el.style.display='block';
+        el.style.textAlign='center';
+      });
+      document.querySelectorAll('.kbtn').forEach(card=>{
+        card.style.minHeight='82px';
+      });
+    }catch(e){}
+  }
+  normalizeTimerText();
+  setInterval(normalizeTimerText,1000);
+})();
+
+
+/* PATCH V20: expired bukan auto selesai.
+   Kamar yang melewati jam keluar tetap di active.
+   Baru masuk history/cleaning hanya ketika doCheckout() dipencet manual. */
+(function(){
+  window.cekKamarAktifKos = function(loc,kamar){
+    try{
+      const a=active.find(x=>String(x.loc)===String(loc)&&String(x.kamar)===String(kamar));
+      if(!a){
+        console.log('Kamar',loc,kamar,'tidak ada di active. Cek history/cleaning.');
+        return null;
+      }
+      const keluar=a.keluar?strToDate(a.keluar):null;
+      const lewat=keluar?keluar<new Date():false;
+      console.log('Kamar aktif:', {
+        loc:a.loc,
+        kamar:a.kamar,
+        nama:getNama(a.loc,a.kamar),
+        masuk:a.masuk,
+        keluar:a.keluar,
+        lewatWaktu:lewat,
+        status: lewat ? 'LEWAT WAKTU tapi BELUM CHECKOUT' : 'AKTIF'
+      });
+      return a;
+    }catch(e){console.error(e);return null;}
+  };
+
+  function normalizeExpiredText(){
+    try{
+      document.querySelectorAll('.kbtn, #panel-body, #o-status-grid').forEach(el=>{
+        if(!el) return;
+        if((el.innerHTML||'').includes('Habis')){
+          el.innerHTML=el.innerHTML.replaceAll('Habis','Lewat waktu');
+        }
+        if((el.innerHTML||'').includes('Waktu sudah habis')){
+          el.innerHTML=el.innerHTML.replaceAll('Waktu sudah habis','Lewat waktu, belum checkout');
+        }
+        if((el.innerHTML||'').includes('Selesai & bebaskan kamar')){
+          el.innerHTML=el.innerHTML.replaceAll('Selesai & bebaskan kamar','Checkout manual & pindahkan ke bersihkan');
+        }
+      });
+    }catch(e){}
+  }
+  normalizeExpiredText();
+  setInterval(normalizeExpiredText,1500);
 })();
 </script>
