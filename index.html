@@ -1,18 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Kos Transit">
-<meta name="application-name" content="Kos Transit">
-<meta name="theme-color" content="#1a1a1a">
-<meta name="description" content="Sistem Kasir Kos Transit">
-<title>Kos Transit — Sistem Kasir</title>
-
-E html>
+<!DOCTYP
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -1366,7 +1353,7 @@ function renderHistoryK(){
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
           '<div style="display:flex;align-items:center;gap:6px">'+
             '<span style="font-weight:800;font-size:13px">'+getNama(a.loc,a.kamar)+'</span>'+
-            '<span style="font-size:10px;background:'+(expired?'#DC2626':'#e67e22')+';color:#fff;padding:1px 7px;border-radius:20px;font-weight:700">'+(expired?'HABIS':'AKTIF')+'</span>'+
+            '<span style="font-size:10px;background:'+(expired?'#DC2626':'#e67e22')+';color:#fff;padding:1px 7px;border-radius:20px;font-weight:700">'+(expired?'LEWAT WAKTU':'AKTIF')+'</span>'+
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(a.total||0).toLocaleString('id-ID')+'</span>'+
         '</div>'+
@@ -1452,7 +1439,7 @@ function renderHistorySemua(){
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
           '<div style="display:flex;align-items:center;gap:6px">'+
             '<span style="font-weight:800;font-size:13px">'+getNama(a.loc,a.kamar)+'</span>'+
-            '<span style="font-size:10px;background:'+(expired?'#DC2626':'#e67e22')+';color:#fff;padding:1px 7px;border-radius:20px;font-weight:700">'+(expired?'HABIS':'AKTIF')+'</span>'+
+            '<span style="font-size:10px;background:'+(expired?'#DC2626':'#e67e22')+';color:#fff;padding:1px 7px;border-radius:20px;font-weight:700">'+(expired?'LEWAT WAKTU':'AKTIF')+'</span>'+
             (isMe?'<span style="font-size:10px;background:#EFF6FF;color:#1D4ED8;padding:1px 7px;border-radius:20px;font-weight:700;border:1px solid #BFDBFE">Saya</span>':'')+
           '</div>'+
           '<span style="font-weight:800;color:#16A34A;font-size:13px">Rp '+(a.total||0).toLocaleString('id-ID')+'</span>'+
@@ -1845,6 +1832,7 @@ function elapsed(masuk){
   return h>0?h+'j '+m+'m':m+'m';
 }
 
+
 function countup(masuk,keluar){
   if(!masuk)return{text:'-',pct:0,warn:false,habis:false};
   const masukDate=strToDate(masuk);
@@ -1856,11 +1844,11 @@ function countup(masuk,keluar){
   const pct=total>0?Math.max(0,Math.min(100,Math.round((elapsed/total)*100))):0;
   const h=Math.floor(elapsed/3600000);
   const m=Math.floor((elapsed%3600000)/60000);
-  const s=Math.floor((elapsed%60000)/1000);
   const warn=keluarDate&&remaining>0&&remaining<1800000;
-  const text=(h>0?h+'j ':'')+m+'m '+s+'d';
+  const text=(h>0?h+'j ':'')+m+'m';
   return{text,pct,warn,habis};
 }
+
 
 function cdHtml(occ){
   const cd=countup(occ.masuk,occ.keluar);
@@ -1886,7 +1874,7 @@ function cdHtml(occ){
   const jamStr=keluarDate?keluarDate.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit'}):'-';
   const tglStr=keluarDate?keluarDate.toLocaleString('id-ID',{day:'2-digit',month:'short'}):'';
   let sisaStr='';
-  if(keluarDate&&!cd.habis){const ms=keluarDate-now;const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);const s=Math.floor((ms%60000)/1000);sisaStr=(h>0?h+'j ':'')+m+'m '+s+'d';}
+  if(keluarDate&&!cd.habis){const ms=keluarDate-now;const h=Math.floor(ms/3600000);const m=Math.floor((ms%3600000)/60000);sisaStr=(h>0?h+'j ':'')+m+'m';}
   const label=cd.habis
     ?'<span style="color:#c0392b;font-weight:700;font-size:12px;display:block">Keluar '+(isToday?'':tglStr+' ')+'pukul '+jamStr+'</span><span style="color:#c0392b;font-size:12px;font-weight:600">⚠ Lewat waktu</span>'
     :'<span style="color:'+color+';font-weight:700;font-size:12px;display:block">Keluar '+(isToday?'':tglStr+' ')+'pukul '+jamStr+'</span><span style="color:'+color+';font-size:12px;font-weight:600">Sisa '+sisaStr+'</span>';
@@ -2059,7 +2047,7 @@ function showCheckin(n,tipe){
     '<div id="ci-toast" class="toast"></div>'+
     '<div class="p-field"><label>Jam masuk <span style="font-size:10px;color:#27ae60;font-weight:600" id="jam-auto-label">(otomatis)</span></label>'+
     '<input id="ci-masuk" type="datetime-local" value="'+nowStr()+'" onchange="jamMasukLocked=true;stopJamMasukClock();document.getElementById(\'jam-auto-label\').textContent=\'(manual)\';document.getElementById(\'jam-auto-label\').style.color=\'#e67e22\';autoDetectSurcharge();" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none"></div>'+
-    '<div id="ci-surcharge" data-active="0" style="width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px">🗓 <span id="ci-surcharge-label">Cek hari...</span></div>'+
+    '<div id="ci-surcharge" data-active="0" onclick="toggleSurcharge(\''+tipe+'\')" style="width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">🗓 <span id="ci-surcharge-label">Manual: OFF</span></div>'+
     '<div class="p-field"><label>Durasi sewa</label>'+
     '<select id="ci-durasi" onchange="onDurasiChange()" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;color:#1a1a1a;outline:none">'+
     '<option value="">- pilih durasi -</option>'+
@@ -2521,7 +2509,7 @@ function showCheckout(occ){
       const ms2=strToDate(occ.keluar)-nowT;
       if(ms2<=0){el.textContent='⚠ Lewat waktu, belum checkout';clearInterval(timerInt);return;}
       const h=Math.floor(ms2/3600000),m=Math.floor((ms2%3600000)/60000),s=Math.floor((ms2%60000)/1000);
-      el.textContent='Sisa: '+(h>0?h+'j ':'')+m+'m '+s+'d';
+      el.textContent='Sisa: '+(h>0?h+'j ':'')+m+'m';
     },1000);
   }
 }
@@ -3078,7 +3066,7 @@ function autoDetectSurcharge(){
     el.dataset.active='1';
     el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #e67e22;background:#fff8f0;font-size:12px;font-weight:600;color:#e67e22;margin-bottom:10px;display:flex;align-items:center;gap:6px';
     const info=isLibur?'🔴 Libur Nasional':(hariIdx===6?'📅 Sabtu':'📅 Minggu');
-    label.innerHTML=info+' &nbsp;-&nbsp; <b>+Rp '+tambahW.toLocaleString('id-ID')+'</b> otomatis ✓';
+    label.innerHTML=info+' &nbsp;-&nbsp; <b>+Rp '+tambahW.toLocaleString('id-ID')+'</b> manual';
   } else {
     el.dataset.active='0';
     el.style.cssText='width:100%;padding:8px 12px;border-radius:10px;border:2px solid #BFDBFE;background:#F8FBFF;font-size:12px;font-weight:600;color:#94A3B8;margin-bottom:10px;display:flex;align-items:center;gap:6px';
@@ -3100,10 +3088,17 @@ function autoDetectSurcharge(){
 }
 
 
+
 function getSurcharge(tipe){
-  if(document.getElementById('ci-surcharge')?.dataset.active==='1') return tarif.tambahWeekend||10000;
-  return 0;
+  // PATCH V23:
+  // Weekend / Libur Nasional dibuat 100% manual.
+  // Default OFF = Rp 0.
+  // Harga hanya tambah kalau tombol ci-surcharge sedang ON.
+  const btn=document.getElementById('ci-surcharge');
+  const manualOn=btn&&btn.dataset.active==='1';
+  return manualOn ? (tarif.tambahWeekend||10000) : 0;
 }
+
 
 // Surcharge per kamar khusus: {loc_kamar: {durasi: tambahan} atau number flat}
 const SURCHARGE_KAMAR={
@@ -4390,7 +4385,7 @@ setInterval(()=>{
       const h=Math.floor(ms/3600000);
       const m=Math.floor((ms%3600000)/60000);
       const s=Math.floor((ms%60000)/1000);
-      el.textContent='Sisa '+(h>0?h+'j ':'')+m+'m '+s+'d';
+      el.textContent='Sisa '+(h>0?h+'j ':'')+m+'m';
     });
   }
 },1000);
@@ -4672,8 +4667,8 @@ setInterval(()=>{
         if((el.innerHTML||'').includes('Habis')){
           el.innerHTML=el.innerHTML.replaceAll('Habis','Lewat waktu');
         }
-        if((el.innerHTML||'').includes('Waktu sudah habis')){
-          el.innerHTML=el.innerHTML.replaceAll('Waktu sudah habis','Lewat waktu, belum checkout');
+        if((el.innerHTML||'').includes('Lewat waktu, belum checkout')){
+          el.innerHTML=el.innerHTML.replaceAll('Lewat waktu, belum checkout','Lewat waktu, belum checkout');
         }
         if((el.innerHTML||'').includes('Selesai & bebaskan kamar')){
           el.innerHTML=el.innerHTML.replaceAll('Selesai & bebaskan kamar','Checkout manual & pindahkan ke bersihkan');
@@ -4683,5 +4678,530 @@ setInterval(()=>{
   }
   normalizeExpiredText();
   setInterval(normalizeExpiredText,1500);
+})();
+
+
+/* PATCH V21: Libur Nasional / Weekend surcharge dibuat manual */
+(function(){
+  window.autoDetectSurcharge = function(){
+    try{
+      const btn=document.getElementById('ci-surcharge');
+      const label=document.getElementById('ci-surcharge-label');
+      if(!btn)return;
+
+      const masukEl=document.getElementById('ci-masuk');
+      const masuk=masukEl&&masukEl.value?strToDate(masukEl.value):new Date();
+      const op=(typeof getOperationalDate==='function')?getOperationalDate(masuk):masuk;
+      const pad=n=>String(n).padStart(2,'0');
+      const tglStr=op.getFullYear()+'-'+pad(op.getMonth()+1)+'-'+pad(op.getDate());
+      let isLibur=false;
+      try{
+        isLibur=(op.getDay()===0||op.getDay()===6||(typeof getLiburSet==='function'&&getLiburSet(op.getFullYear()).has(tglStr)));
+      }catch(e){
+        isLibur=(op.getDay()===0||op.getDay()===6);
+      }
+
+      // Tidak otomatis ON. Hanya info/saran.
+      if(btn.dataset.active!=='1'){
+        btn.dataset.active='0';
+        btn.style.borderColor=isLibur?'#E67E22':'#e0e0e0';
+        btn.style.background='#fff';
+        btn.style.color=isLibur?'#C2410C':'#94A3B8';
+        const txt=isLibur
+          ? '🔴 Libur/weekend terdeteksi, klik untuk ON +Rp '+(tarif.tambahWeekend||10000).toLocaleString('id-ID')
+          : 'Manual: OFF';
+        if(label) label.innerHTML=txt;
+        else btn.innerHTML='🗓 '+txt;
+      }
+    }catch(e){}
+  };
+
+  window.toggleSurcharge = function(tipe){
+    const btn=document.getElementById('ci-surcharge');
+    if(!btn)return;
+    const active=btn.dataset.active==='1';
+    btn.dataset.active=active?'0':'1';
+    const tambah=(tarif.tambahWeekend||10000).toLocaleString('id-ID');
+
+    if(!active){
+      btn.style.borderColor='#E67E22';
+      btn.style.background='#FFF7ED';
+      btn.style.color='#C2410C';
+      btn.innerHTML='🗓 Weekend / 🔴 Libur Nasional &nbsp;&nbsp;<b>MANUAL ON ✓ +Rp '+tambah+'</b>';
+    }else{
+      btn.style.borderColor='#e0e0e0';
+      btn.style.background='#fff';
+      btn.style.color='#94A3B8';
+      btn.innerHTML='🗓 Weekend / 🔴 Libur Nasional &nbsp;&nbsp;<b>MANUAL OFF</b>';
+    }
+
+    if(typeof rebuildDurasiOptions==='function'){
+      rebuildDurasiOptions(tipe||((selected&&selected.tipe)||'ac'));
+    }else if(typeof updateEst==='function'){
+      updateEst();
+    }
+  };
+
+  function bindManualSurchargeClick(){
+    const btn=document.getElementById('ci-surcharge');
+    if(btn&&!btn.dataset.v21bind){
+      btn.dataset.v21bind='1';
+      btn.style.cursor='pointer';
+      btn.style.userSelect='none';
+      btn.addEventListener('click',function(){
+        window.toggleSurcharge((selected&&selected.tipe)||'ac');
+      });
+    }
+  }
+
+  const oldShowCheckin=window.showCheckin;
+  if(typeof oldShowCheckin==='function'&&!oldShowCheckin._v21manual){
+    const wrapped=function(){
+      oldShowCheckin.apply(this,arguments);
+      setTimeout(()=>{
+        bindManualSurchargeClick();
+        window.autoDetectSurcharge();
+      },80);
+    };
+    wrapped._v21manual=true;
+    window.showCheckin=wrapped;
+  }
+
+  setInterval(bindManualSurchargeClick,1000);
+})();
+
+
+/* PATCH V22: tombol Libur/Weekend ON-OFF beneran */
+(function(){
+  function weekendManualState(){
+    const btn=document.getElementById('ci-surcharge');
+    return btn && btn.dataset.active==='1';
+  }
+
+  function paintWeekendButton(force){
+    const old=document.getElementById('ci-surcharge');
+    if(!old)return;
+
+    // Kalau elemen masih DIV, ganti jadi BUTTON asli supaya gampang dipencet di HP.
+    let btn=old;
+    if(old.tagName!=='BUTTON'){
+      btn=document.createElement('button');
+      btn.id='ci-surcharge';
+      btn.type='button';
+      btn.dataset.active=old.dataset.active||'0';
+      old.parentNode.replaceChild(btn, old);
+    }
+
+    const active = force!==undefined ? !!force : (btn.dataset.active==='1');
+    btn.dataset.active = active ? '1' : '0';
+    btn.style.cssText = [
+      'width:100%',
+      'padding:10px 12px',
+      'border-radius:12px',
+      'border:2px solid '+(active?'#EA580C':'#d4d4d4'),
+      'background:'+(active?'#FFF7ED':'#fff'),
+      'color:'+(active?'#C2410C':'#94A3B8'),
+      'font-size:13px',
+      'font-weight:900',
+      'margin-bottom:10px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'gap:10px',
+      'cursor:pointer',
+      'user-select:none',
+      'touch-action:manipulation',
+      '-webkit-tap-highlight-color:transparent'
+    ].join(';');
+
+    const tambah=(tarif.tambahWeekend||10000).toLocaleString('id-ID');
+    btn.innerHTML =
+      '<span>🗓 Weekend / 🔴 Libur Nasional</span>'+
+      '<span style="padding:4px 10px;border-radius:999px;background:'+(active?'#EA580C':'#E5E7EB')+';color:'+(active?'#fff':'#64748B')+';font-weight:900">'+
+        (active?'ON +Rp '+tambah:'OFF')+
+      '</span>';
+  }
+
+  window.setWeekendManual = function(on){
+    paintWeekendButton(on);
+    if(typeof rebuildDurasiOptions==='function'){
+      rebuildDurasiOptions((selected&&selected.tipe)||'ac');
+    }else if(typeof updateEst==='function'){
+      updateEst();
+    }
+  };
+
+  window.toggleSurcharge = function(tipe){
+    const btn=document.getElementById('ci-surcharge');
+    const nowOn = !(btn && btn.dataset.active==='1');
+    paintWeekendButton(nowOn);
+    if(typeof rebuildDurasiOptions==='function') rebuildDurasiOptions(tipe||((selected&&selected.tipe)||'ac'));
+    else if(typeof updateEst==='function') updateEst();
+  };
+
+  // Override auto detect: hanya gambar tombol OFF, tidak pernah auto ON.
+  window.autoDetectSurcharge = function(){
+    const btn=document.getElementById('ci-surcharge');
+    if(btn && btn.dataset.active==='1') paintWeekendButton(true);
+    else paintWeekendButton(false);
+  };
+
+  function bindWeekendBtn(){
+    const btn=document.getElementById('ci-surcharge');
+    if(!btn)return;
+    if(btn.tagName!=='BUTTON') paintWeekendButton(btn.dataset.active==='1');
+    const real=document.getElementById('ci-surcharge');
+    if(real && !real.dataset.v22bound){
+      real.dataset.v22bound='1';
+      real.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        window.toggleSurcharge((selected&&selected.tipe)||'ac');
+      }, true);
+    }
+  }
+
+  const oldShowCheckin2=window.showCheckin;
+  if(typeof oldShowCheckin2==='function'&&!oldShowCheckin2._v22manual){
+    const wrapped=function(){
+      oldShowCheckin2.apply(this,arguments);
+      setTimeout(()=>{
+        paintWeekendButton(false);
+        bindWeekendBtn();
+        if(typeof updateEst==='function') updateEst();
+      },60);
+    };
+    wrapped._v22manual=true;
+    window.showCheckin=wrapped;
+  }
+
+  document.addEventListener('click',function(e){
+    const hit=e.target.closest&&e.target.closest('#ci-surcharge');
+    if(hit){
+      e.preventDefault();
+      e.stopPropagation();
+      window.toggleSurcharge((selected&&selected.tipe)||'ac');
+    }
+  }, true);
+
+  setInterval(bindWeekendBtn,500);
+})();
+
+
+/* PATCH V23: surcharge 100% manual per transaksi/karyawan/lokasi */
+(function(){
+  function paintManualBtn(on){
+    const btn=document.getElementById('ci-surcharge');
+    if(!btn)return;
+    btn.dataset.active=on?'1':'0';
+    btn.style.borderColor=on?'#EA580C':'#d4d4d4';
+    btn.style.background=on?'#FFF7ED':'#fff';
+    btn.style.color=on?'#C2410C':'#94A3B8';
+    btn.style.cursor='pointer';
+    btn.style.userSelect='none';
+    btn.style.touchAction='manipulation';
+    const tambah=(tarif.tambahWeekend||10000).toLocaleString('id-ID');
+    btn.innerHTML=
+      '<span>🗓 Weekend / 🔴 Libur Nasional</span>'+
+      '<span style="padding:4px 10px;border-radius:999px;background:'+(on?'#EA580C':'#E5E7EB')+';color:'+(on?'#fff':'#64748B')+';font-weight:900">'+
+      (on?'ON +Rp '+tambah:'OFF')+
+      '</span>';
+  }
+
+  window.autoDetectSurcharge=function(){
+    // Tidak ada auto ON lagi.
+    // Tiap buka check-in default OFF.
+    const btn=document.getElementById('ci-surcharge');
+    if(btn && !btn.dataset.manualTouched){
+      paintManualBtn(false);
+    }
+  };
+
+  window.toggleSurcharge=function(tipe){
+    const btn=document.getElementById('ci-surcharge');
+    const next=!(btn&&btn.dataset.active==='1');
+    if(btn)btn.dataset.manualTouched='1';
+    paintManualBtn(next);
+    if(typeof rebuildDurasiOptions==='function') rebuildDurasiOptions(tipe||((selected&&selected.tipe)||'ac'));
+    else if(typeof updateEst==='function') updateEst();
+  };
+
+  const oldShowCheckinV23=window.showCheckin;
+  if(typeof oldShowCheckinV23==='function'&&!oldShowCheckinV23._v23manual){
+    const wrapped=function(){
+      oldShowCheckinV23.apply(this,arguments);
+      setTimeout(()=>{
+        const btn=document.getElementById('ci-surcharge');
+        if(btn){
+          btn.dataset.manualTouched='';
+          btn.onclick=function(e){
+            if(e){e.preventDefault();e.stopPropagation();}
+            window.toggleSurcharge((selected&&selected.tipe)||'ac');
+            return false;
+          };
+          paintManualBtn(false);
+        }
+        if(typeof rebuildDurasiOptions==='function') rebuildDurasiOptions((selected&&selected.tipe)||'ac');
+      },80);
+    };
+    wrapped._v23manual=true;
+    window.showCheckin=wrapped;
+  }
+})();
+
+
+/* PATCH V24 CLEAN FINAL:
+   - HTML dobel dibersihkan
+   - +10K 100% manual per transaksi
+   - timer tanpa detik biar tampilan tidak gerak
+   - lewat waktu bukan auto selesai
+*/
+(function(){
+  function paintPlus10Btn(on){
+    const btn=document.getElementById('ci-surcharge');
+    if(!btn)return;
+    btn.dataset.active=on?'1':'0';
+    btn.style.cssText=[
+      'width:100%',
+      'padding:10px 12px',
+      'border-radius:12px',
+      'border:2px solid '+(on?'#EA580C':'#d4d4d4'),
+      'background:'+(on?'#FFF7ED':'#fff'),
+      'color:'+(on?'#C2410C':'#94A3B8'),
+      'font-size:13px',
+      'font-weight:900',
+      'margin-bottom:10px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'gap:10px',
+      'cursor:pointer',
+      'user-select:none',
+      'touch-action:manipulation',
+      '-webkit-tap-highlight-color:transparent'
+    ].join(';');
+    const tambah=(tarif.tambahWeekend||10000).toLocaleString('id-ID');
+    btn.innerHTML='<span>🗓 Weekend / 🔴 Libur Nasional</span><span style="padding:4px 10px;border-radius:999px;background:'+(on?'#EA580C':'#E5E7EB')+';color:'+(on?'#fff':'#64748B')+';font-weight:900">'+(on?'ON +Rp '+tambah:'OFF')+'</span>';
+  }
+
+  window.autoDetectSurcharge=function(){
+    // Tidak auto ON. Hanya refresh tampilan tombol sesuai state.
+    const btn=document.getElementById('ci-surcharge');
+    paintPlus10Btn(btn&&btn.dataset.active==='1');
+  };
+
+  window.toggleSurcharge=function(tipe){
+    const btn=document.getElementById('ci-surcharge');
+    const next=!(btn&&btn.dataset.active==='1');
+    paintPlus10Btn(next);
+    if(typeof rebuildDurasiOptions==='function') rebuildDurasiOptions(tipe||((selected&&selected.tipe)||'ac'));
+    else if(typeof updateEst==='function') updateEst();
+  };
+
+  function bindPlus10(){
+    const btn=document.getElementById('ci-surcharge');
+    if(!btn)return;
+    if(!btn.dataset.v24bound){
+      btn.dataset.v24bound='1';
+      btn.onclick=function(e){
+        if(e){e.preventDefault();e.stopPropagation();}
+        window.toggleSurcharge((selected&&selected.tipe)||'ac');
+        return false;
+      };
+    }
+  }
+
+  const oldShowCheckinV24=window.showCheckin;
+  if(typeof oldShowCheckinV24==='function'&&!oldShowCheckinV24._v24clean){
+    const wrapped=function(){
+      oldShowCheckinV24.apply(this,arguments);
+      setTimeout(()=>{
+        const btn=document.getElementById('ci-surcharge');
+        if(btn){
+          btn.dataset.active='0';
+          btn.dataset.manualTouched='';
+          paintPlus10Btn(false);
+          bindPlus10();
+        }
+        if(typeof rebuildDurasiOptions==='function') rebuildDurasiOptions((selected&&selected.tipe)||'ac');
+      },80);
+    };
+    wrapped._v24clean=true;
+    window.showCheckin=wrapped;
+  }
+
+  function stabilizeText(){
+    document.querySelectorAll('.kdur').forEach(el=>{
+      const t=(el.textContent||'').trim();
+      const m=t.match(/^Sisa\s+(.+?)\s+\d+d$/);
+      if(m)el.textContent='Sisa '+m[1];
+      if(el.textContent==='Habis')el.textContent='Lewat waktu';
+      el.style.minWidth='58px';
+      el.style.display='block';
+      el.style.textAlign='center';
+    });
+  }
+
+  setInterval(()=>{bindPlus10();stabilizeText();},1000);
+})();
+
+
+/* PATCH V28: fix tombol Keluar / Logout */
+(function(){
+  window.logout = function(){
+    try{ localStorage.removeItem('ks_state'); }catch(e){}
+
+    try{
+      curKarya='';
+      curJabatan='karyawan';
+      curLokGrp='';
+      curLoc=1;
+      selected=null;
+      pinBuf='';
+      if(typeof updateDots==='function') updateDots();
+    }catch(e){}
+
+    const idsClear=['login-nama','login-pass','login-karya-err','pin-err'];
+    idsClear.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      if('value' in el) el.value='';
+      else el.textContent='';
+    });
+
+    document.querySelectorAll('[id^="lok-btn-"]').forEach(b=>{
+      b.style.borderColor='#e0e0e0';
+      b.style.background='#f9f9f9';
+      b.style.color='#888';
+    });
+
+    document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+    const login=document.getElementById('screen-login');
+    if(login) login.classList.add('active');
+
+    try{
+      if(typeof selMode==='function') selMode('karya');
+    }catch(e){}
+
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+
+  function bindLogoutButtons(){
+    document.querySelectorAll('.btn-logout, button[onclick="logout()"]').forEach(btn=>{
+      if(btn.dataset.v28logout)return;
+      btn.dataset.v28logout='1';
+      btn.type='button';
+      btn.style.pointerEvents='auto';
+      btn.style.cursor='pointer';
+      btn.onclick=function(e){
+        if(e){e.preventDefault();e.stopPropagation();}
+        window.logout();
+        return false;
+      };
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',bindLogoutButtons);
+  }else{
+    bindLogoutButtons();
+  }
+  setInterval(bindLogoutButtons,1000);
+})();
+
+
+/* PATCH V29: login karyawan tersimpan, tidak perlu login ulang di device yang sama */
+(function(){
+  function saveKaryawanSession(){
+    try{
+      if(!curKarya)return;
+      localStorage.setItem('ks_state', JSON.stringify({
+        screen:'karya',
+        karya:curKarya,
+        loc:curLoc||1,
+        lokGrp:curLokGrp||'123',
+        jabatan:curJabatan||'karyawan',
+        savedAt:Date.now()
+      }));
+    }catch(e){}
+  }
+
+  function restoreKaryawanSessionV29(){
+    try{
+      const raw=localStorage.getItem('ks_state');
+      if(!raw)return false;
+      const st=JSON.parse(raw);
+      if(st.screen!=='karya'||!st.karya)return false;
+
+      curKarya=st.karya;
+      curLoc=parseInt(st.loc)||1;
+      curLokGrp=st.lokGrp||'123';
+      curJabatan=st.jabatan||'karyawan';
+
+      const badge=document.getElementById('karya-badge');
+      if(badge){
+        badge.textContent=curJabatan==='parttime'
+          ? curKarya+' (Part Time)'
+          : curKarya;
+      }
+
+      document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+      const karya=document.getElementById('screen-karya');
+      if(karya)karya.classList.add('active');
+
+      document.querySelectorAll('.k-section').forEach(s=>s.classList.remove('active'));
+      const pos=document.getElementById('k-pos');
+      if(pos)pos.classList.add('active');
+
+      document.querySelectorAll('#screen-karya .nav-tab').forEach(b=>b.classList.remove('active'));
+      const kasirBtn=document.querySelector('#screen-karya .nav-tab[onclick*="pos"]');
+      if(kasirBtn)kasirBtn.classList.add('active');
+
+      if(typeof updateLocTabs==='function')updateLocTabs();
+      if(typeof renderGrid==='function')renderGrid();
+
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  const oldLoginKarya=window.loginKarya;
+  if(typeof oldLoginKarya==='function'&&!oldLoginKarya._v29save){
+    const wrapped=function(){
+      const before=localStorage.getItem('ks_state');
+      const ret=oldLoginKarya.apply(this,arguments);
+      setTimeout(saveKaryawanSession,150);
+      return ret;
+    };
+    wrapped._v29save=true;
+    window.loginKarya=wrapped;
+  }
+
+  const oldShowScreen=window.showScreen;
+  if(typeof oldShowScreen==='function'&&!oldShowScreen._v29save){
+    const wrapped=function(s){
+      const ret=oldShowScreen.apply(this,arguments);
+      if(s==='karya')setTimeout(saveKaryawanSession,50);
+      return ret;
+    };
+    wrapped._v29save=true;
+    window.showScreen=wrapped;
+  }
+
+  const oldRestore=window.restoreSession;
+  window.restoreSession=function(){
+    if(restoreKaryawanSessionV29())return;
+    if(typeof oldRestore==='function')return oldRestore.apply(this,arguments);
+  };
+
+  // Restore otomatis saat halaman dibuka, bahkan sebelum Firebase selesai.
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(restoreKaryawanSessionV29,250));
+  }else{
+    setTimeout(restoreKaryawanSessionV29,250);
+  }
+
+  // Catatan: tombol Keluar tetap akan menghapus session, jadi kalau benar-benar mau ganti akun tinggal klik Keluar.
 })();
 </script>
